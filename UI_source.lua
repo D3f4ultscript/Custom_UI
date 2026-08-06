@@ -4304,6 +4304,7 @@ Bracket.Templates = {
 						Opt.PopupInstance.Tick.BackgroundColor3 = sel and Window.Color or Color3.fromRGB(63, 63, 63)
 					end
 					RebuildSelected()
+					if Dropdown.Callback then Dropdown.Callback(GetValue()) end
 					return
 				end
 				originalNewindex(self, key, value)
