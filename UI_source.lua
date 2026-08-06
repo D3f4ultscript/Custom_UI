@@ -770,7 +770,7 @@ Bracket.Instances = {
 		Label.RichText = true
 		Label.TextColor3 = Color3.fromRGB(191, 191, 191)
 		-- Label.TextYAlignment = Enum.TextYAlignment.Top
-		Label.Text = "by D3f4ult"
+		Label.Text = "by D3f4ult v1"
 		Label.FontFace = Font.fromEnum(Enum.Font.SourceSansSemibold)
 		Label.TextXAlignment = Enum.TextXAlignment.Right
 		Label.Parent = Topbar
@@ -2936,22 +2936,44 @@ Bracket.Templates = {
 				local ConfigDropdown = nil
 				local ConfigTextbox = nil
 
-				local function UpdateConfigList(Name)
+				local function UpdateConfigList()
+					if not ConfigDropdown then return end
+					local selected = (ConfigDropdown.Value and ConfigDropdown.Value[1]) or nil
 					ConfigDropdown:Clear()
 					ConfigList = Bracket.Utilities.ConfigsToList(FolderName)
 					ConfigDropdown:BulkAdd(ConfigList)
-					ConfigDropdown.Value = {}
+					if selected and table.find(Bracket.Utilities.GetConfigs(FolderName), selected) then
+						ConfigDropdown.Value = selected
+					else
+						ConfigDropdown.Value = {}
+					end
 				end
 
 				ConfigTextbox = ConfigSection:Textbox({HideName = true, Placeholder = "Config Name", IgnoreFlag = true})
 				ConfigSection:Button({Name = "Create", Callback = function()
-					Bracket:SaveConfig(FolderName, ConfigTextbox.Value)
-					UpdateConfigList(ConfigTextbox.Value)
+					if ConfigTextbox.Value and ConfigTextbox.Value ~= "" then
+						Bracket:SaveConfig(FolderName, ConfigTextbox.Value)
+						UpdateConfigList()
+						ConfigDropdown.Value = ConfigTextbox.Value
+					else
+						Bracket:PushNotification({
+							Title = "Config System",
+							Description = "Please enter a valid Config Name",
+							Duration = 5
+						})
+					end
 				end})
 
 				ConfigSection:Divider({Text = "Configs"})
 
 				ConfigDropdown = ConfigSection:Dropdown({HideName = true, IgnoreFlag = true, List = ConfigList})
+
+				ConfigDropdown.OptionContainerInstance:GetPropertyChangedSignal("Visible"):Connect(function()
+					UpdateConfigList()
+				end)
+				ConfigDropdown.PopupContainerInstance:GetPropertyChangedSignal("Visible"):Connect(function()
+					UpdateConfigList()
+				end)
 
 				ConfigSection:Button({Name = "Save", Callback = function()
 					if ConfigDropdown.Value and ConfigDropdown.Value[1] then
@@ -2960,7 +2982,7 @@ Bracket.Templates = {
 						Bracket:PushNotification({
 							Title = "Config System",
 							Description = "Select Config First",
-							Duration = 10
+							Duration = 5
 						})
 					end
 				end})
@@ -2971,7 +2993,7 @@ Bracket.Templates = {
 						Bracket:PushNotification({
 							Title = "Config System",
 							Description = "Select Config First",
-							Duration = 10
+							Duration = 5
 						})
 					end
 				end})
@@ -2983,11 +3005,10 @@ Bracket.Templates = {
 						Bracket:PushNotification({
 							Title = "Config System",
 							Description = "Select Config First",
-							Duration = 10
+							Duration = 5
 						})
 					end
 				end})
-				ConfigSection:Button({Name = "Refresh", Callback = UpdateConfigList})
 
 				local ConfigDivider = ConfigSection:Divider({Text = not AutoloadConfig and "Autoload Config"
 					or `Autoload Config\n<font color="rgb(191, 191, 191)">[ {AutoloadConfig} ]</font>`})
@@ -2996,17 +3017,27 @@ Bracket.Templates = {
 					if ConfigDropdown.Value and ConfigDropdown.Value[1] then
 						Bracket:AddToAutoload(FolderName, ConfigDropdown.Value[1])
 						ConfigDivider.Text = `Autoload Config\n<font color="rgb(191, 191, 191)">[ {ConfigDropdown.Value[1]} ]</font>`
+						Bracket:PushNotification({
+							Title = "Config System",
+							Description = `Set "{ConfigDropdown.Value[1]}" as Autoload Config`,
+							Duration = 5
+						})
 					else
 						Bracket:PushNotification({
 							Title = "Config System",
 							Description = "Select Config First",
-							Duration = 10
+							Duration = 5
 						})
 					end
 				end})
 				ConfigSection:Button({Name = "Clear Autoload Config", Callback = function()
 					Bracket:RemoveFromAutoload(FolderName)
 					ConfigDivider.Text = "Autoload Config"
+					Bracket:PushNotification({
+						Title = "Config System",
+						Description = "Cleared Autoload Config",
+						Duration = 5
+					})
 				end})
 			end
 		end
@@ -3928,7 +3959,12 @@ Bracket.Templates = {
 					SelectedList[#SelectedList + 1] = Option.Name
 				end
 			end
+			table.clear(Dropdown.Internal.Value)
+			for i, name in ipairs(SelectedList) do
+				Dropdown.Internal.Value[i] = name
+			end
 			DropdownInstance.Background.Value.Text = #SelectedList == 0 and "..." or table.concat(SelectedList, ", ")
+			Bracket.Flags[Dropdown.Flag] = Dropdown.Value
 		end
 
 		local ContainerRender = nil
@@ -4722,17 +4758,40 @@ function Bracket.Window(Self, Window)
 		end
 	end)
 
+	-- Ensure built-in Watermark, KeybindList, and Cursor are initialized with Enabled = false by default
+	if not Bracket.Watermark then
+		Bracket:Watermark({
+			Title = Window.Name .. " | Version 1.0",
+			Enabled = false,
+			Flag = "UI/Watermark/Position"
+		})
+	end
+	if not Bracket.KeybindList then
+		Bracket:KeybindList({
+			Title = "Keybind Tracker",
+			Enabled = false,
+			Position = UDim2.new(0, 10, 0.5, -123),
+			Size = UDim2.new(0, 150, 0, 250)
+		})
+	end
+	if not Bracket.Cursor then
+		Bracket:Cursor({
+			Enabled = false
+		})
+	end
+
 	task.defer(function()
-		local ConfigFolder = Window.ConfigFolder or "Rift\\Configs\\NoobIncremental"
+		local ConfigFolder = Window.ConfigFolder or "Rift\\Configs\\Default"
 		if not isfolder("Rift") then makefolder("Rift") end
 		if not isfolder("Rift\\Configs") then makefolder("Rift\\Configs") end
-		if not isfolder("Rift\\Configs\\NoobIncremental") then makefolder("Rift\\Configs\\NoobIncremental") end
 
 		local SettingsMainTab = Window:Tab({ Name = "Settings", LayoutOrder = 999999 })
 
+		-- SubTab 1: Configs
 		local ConfigSubTab = SettingsMainTab:SubTab({ Name = "Configs" })
 		ConfigSubTab:AddConfigSection(ConfigFolder, "Left")
 
+		-- SubTab 2: UI
 		local UISubTab = SettingsMainTab:SubTab({ Name = "UI" })
 
 		local SettingsSection = UISubTab:Section({ Name = "UI Customization", Side = "Left" })
@@ -4776,6 +4835,132 @@ function Bracket.Window(Self, Window)
 			Callback = function(Value)
 				if Bracket.KeybindList then
 					Bracket.KeybindList.Enabled = Value
+				end
+			end
+		})
+
+		-- SubTab 3: Server
+		local ServerSubTab = SettingsMainTab:SubTab({ Name = "Server" })
+		local ServerSection = ServerSubTab:Section({ Name = "Server", Side = "Left" })
+		ServerSection:Divider({ Text = "Rejoin / Server Hop" })
+
+		ServerSection:Button({
+			Name = "Rejoin same Server",
+			Callback = function()
+				local TeleportService = game:GetService("TeleportService")
+				if #PlayerService:GetPlayers() <= 1 then
+					TeleportService:Teleport(game.PlaceId, LocalPlayer)
+				else
+					TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
+				end
+			end
+		})
+
+		ServerSection:Button({
+			Name = "Server Hop",
+			Callback = function()
+				local TeleportService = game:GetService("TeleportService")
+				local ApiUrl = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
+				local ok, result = pcall(function()
+					return HttpService:JSONDecode(game:HttpGet(ApiUrl))
+				end)
+				if ok and result and result.data then
+					local servers = {}
+					for _, server in ipairs(result.data) do
+						if type(server) == "table" and server.id ~= game.JobId and server.playing < server.maxPlayers and server.playing > 0 then
+							table.insert(servers, server.id)
+						end
+					end
+					if #servers > 0 then
+						local chosenServer = servers[math.random(1, #servers)]
+						TeleportService:TeleportToPlaceInstance(game.PlaceId, chosenServer, LocalPlayer)
+						return
+					end
+				end
+				TeleportService:Teleport(game.PlaceId, LocalPlayer)
+			end
+		})
+
+		-- SubTab 4: Players
+		local PlayersSubTab = SettingsMainTab:SubTab({ Name = "Players" })
+		local PlayersSection = PlayersSubTab:Section({ Name = "Players", Side = "Left" })
+		PlayersSection:Divider({ Text = "Spectate" })
+
+		local SpectateDropdown = PlayersSection:Dropdown({
+			HideName = true,
+			IgnoreFlag = true,
+			List = {}
+		})
+
+		local function RefreshPlayersList()
+			local selected = (SpectateDropdown.Value and SpectateDropdown.Value[1]) or nil
+			SpectateDropdown:Clear()
+			local list = {}
+			for _, p in ipairs(PlayerService:GetPlayers()) do
+				if p ~= LocalPlayer then
+					table.insert(list, { Name = p.Name, Mode = "Button" })
+				end
+			end
+			SpectateDropdown:BulkAdd(list)
+			if selected and PlayerService:FindFirstChild(selected) then
+				SpectateDropdown.Value = selected
+			end
+		end
+
+		RefreshPlayersList()
+		PlayerService.PlayerAdded:Connect(RefreshPlayersList)
+		PlayerService.PlayerRemoving:Connect(RefreshPlayersList)
+
+		SpectateDropdown.OptionContainerInstance:GetPropertyChangedSignal("Visible"):Connect(function()
+			RefreshPlayersList()
+		end)
+		SpectateDropdown.PopupContainerInstance:GetPropertyChangedSignal("Visible"):Connect(function()
+			RefreshPlayersList()
+		end)
+
+		local SpectateConnection = nil
+		local Spectating = false
+
+		local function StopSpectating()
+			Spectating = false
+			if SpectateConnection then
+				SpectateConnection:Disconnect()
+				SpectateConnection = nil
+			end
+			local camera = Workspace.CurrentCamera
+			if camera and LocalPlayer and LocalPlayer.Character then
+				local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+				if hum then
+					camera.CameraSubject = hum
+				end
+			end
+		end
+
+		PlayersSection:Toggle({
+			Name = "Spectate Player",
+			Value = false,
+			Flag = "Settings/SpectatePlayerToggle",
+			Callback = function(State)
+				Spectating = State
+				if State then
+					if SpectateConnection then SpectateConnection:Disconnect() end
+					SpectateConnection = RunService.RenderStepped:Connect(function()
+						if not Spectating then return end
+						local selectedName = (SpectateDropdown.Value and SpectateDropdown.Value[1]) or nil
+						local targetPlayer = selectedName and PlayerService:FindFirstChild(selectedName)
+						local camera = Workspace.CurrentCamera
+						if targetPlayer and targetPlayer.Character and camera then
+							local hum = targetPlayer.Character:FindFirstChildOfClass("Humanoid")
+							if hum then
+								camera.CameraSubject = hum
+								camera.CameraType = Enum.CameraType.Custom
+							end
+						else
+							StopSpectating()
+						end
+					end)
+				else
+					StopSpectating()
 				end
 			end
 		})
