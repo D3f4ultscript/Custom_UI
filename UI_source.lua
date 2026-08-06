@@ -3971,6 +3971,7 @@ Bracket.Templates = {
 		end)
 
 		local function UpdateLayout()
+			DropdownInstance.Title.Visible = not Dropdown.HideName
 			local TitleH = Dropdown.HideName and 0 or math.max(14, DropdownInstance.Title.TextBounds.Y)
 			DropdownInstance.Title.Size = Dropdown.HideName and UDim2.fromScale(1, 0) or UDim2.new(1, 0, 0, TitleH)
 			DropdownInstance.Background.Position = UDim2.new(0, 0, 0, TitleH + (Dropdown.HideName and 0 or 4))
