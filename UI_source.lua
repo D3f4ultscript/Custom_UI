@@ -770,7 +770,7 @@ Bracket.Instances = {
 		Label.RichText = true
 		Label.TextColor3 = Color3.fromRGB(191, 191, 191)
 		-- Label.TextYAlignment = Enum.TextYAlignment.Top
-		Label.Text = "by D3f4ult"
+		Label.Text = "by D3f4ult v1"
 		Label.FontFace = Font.fromEnum(Enum.Font.SourceSansSemibold)
 		Label.TextXAlignment = Enum.TextXAlignment.Right
 		Label.Parent = Topbar
@@ -4613,7 +4613,7 @@ function Bracket.Window(Self, Window)
 		local DisplaySection = UISubTab:Section({ Name = "Display & Toggles", Side = "Right" })
 		DisplaySection:Keybind({
 			Name = "UI Toggle Key",
-			Value = Enum.KeyCode.RightControl,
+			Value = Enum.KeyCode.RightShift,
 			Mode = "Toggle",
 			Flag = "UI/ToggleKey",
 			Callback = function(Key, KeyDown, ToggleState)
