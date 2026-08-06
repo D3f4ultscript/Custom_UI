@@ -770,7 +770,7 @@ Bracket.Instances = {
 		Label.RichText = true
 		Label.TextColor3 = Color3.fromRGB(191, 191, 191)
 		-- Label.TextYAlignment = Enum.TextYAlignment.Top
-		Label.Text = "by D3f4ult V1"
+		Label.Text = "by D3f4ult"
 		Label.FontFace = Font.fromEnum(Enum.Font.SourceSansSemibold)
 		Label.TextXAlignment = Enum.TextXAlignment.Right
 		Label.Parent = Topbar
@@ -4023,7 +4023,18 @@ Bracket.Templates = {
 			Dropdown.Value = Dropdown.Internal.Value
 		end
 
+		function Dropdown.BulkAdd(Self, List)
+			if type(List) ~= "table" then return end
+			for Index, Option in ipairs(List) do
+				local Opt = Dropdown:AddOption(Option, Index)
+				Dropdown.List[Index] = Opt
+			end
+		end
+
 		function Dropdown.AddOption(Self, Option, LayoutOrder)
+			if type(Option) == "string" then
+				Option = { Name = Option }
+			end
 			Option = Bracket.Utilities:GetType(Option, "table", {}, true)
 			Option.Name = Bracket.Utilities:GetType(Option.Name, "string", "Option")
 			Option.Mode = Bracket.Utilities:GetType(Option.Mode, "string", "Button")
@@ -4781,11 +4792,31 @@ function Bracket.FormatConfig(Self)
 	return Config
 end
 function Bracket.SaveConfig(Self, FolderName, Name)
+	if not Name or Name == "" or type(Name) ~= "string" then
+		Self:PushNotification({
+			Title = "Config System",
+			Description = "Please enter a valid Config Name",
+			Duration = 5
+		})
+		return
+	end
+	if not isfolder(FolderName) then makefolder(FolderName) end
+	if not isfolder(`{FolderName}\\Configs`) then makefolder(`{FolderName}\\Configs`) end
+
 	local Config = Self:FormatConfig()
 	Config = HttpService:JSONEncode(Config)
 	writefile(`{FolderName}\\Configs\\{Name}.json`, Config)
+	Self:PushNotification({
+		Title = "Config System",
+		Description = `Successfully saved config "{Name}"`,
+		Duration = 5
+	})
 end
 function Bracket.LoadConfig(Self, FolderName, Name)
+	if not Name or Name == "" then return end
+	if not isfolder(FolderName) then makefolder(FolderName) end
+	if not isfolder(`{FolderName}\\Configs`) then makefolder(`{FolderName}\\Configs`) end
+
 	if table.find(Self.Utilities.GetConfigs(FolderName), Name) then
 		local Data = readfile(`{FolderName}\\Configs\\{Name}.json`)
 		local DecodedJSON = HttpService:JSONDecode(Data)
@@ -4793,18 +4824,18 @@ function Bracket.LoadConfig(Self, FolderName, Name)
 		for Index, Element in Self.Elements do
 			if Element.Flag and not Element.IgnoreFlag then
 				local Value = DecodedJSON[Element.Flag]
-				Element.Value = Value or Element.Default
+				if Value ~= nil then
+					Element.Value = Value
+				end
 			end
 		end
-		--[[for Flag, Value in pairs(DecodedJSON) do
-			local Element = Self.Utilities.FindElementByFlag(Self, Flag)
-			if Element ~= nil then
-				Element.Value = Value
-			end
-		end]]
 	end
 end
 function Bracket.DeleteConfig(Self, FolderName, Name)
+	if not Name or Name == "" then return end
+	if not isfolder(FolderName) then makefolder(FolderName) end
+	if not isfolder(`{FolderName}\\Configs`) then makefolder(`{FolderName}\\Configs`) end
+
 	if table.find(Self.Utilities.GetConfigs(FolderName), Name) then
 		delfile(`{FolderName}\\Configs\\{Name}.json`)
 	end
