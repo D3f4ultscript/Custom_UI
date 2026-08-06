@@ -324,42 +324,45 @@ Bracket.Utilities = {
 			end
 		end
 	end,
+	GetRiftConfigPath = function()
+		if not isfolder("Rift") then makefolder("Rift") end
+		if not isfolder("Rift\\Configs") then makefolder("Rift\\Configs") end
+		local gameFolder = `Rift\\Configs\\{tostring(game.GameId)}`
+		if not isfolder(gameFolder) then makefolder(gameFolder) end
+		return gameFolder
+	end,
 	GetConfigs = function(FolderName)
-		if not isfolder(FolderName) then makefolder(FolderName) end
-		if not isfolder(`{FolderName}\\Configs`) then makefolder(`{FolderName}\\Configs`) end
+		local ConfigPath = Bracket.Utilities.GetRiftConfigPath()
+		local Configs = {}
+		for Index, Config in pairs(listfiles(ConfigPath) or {}) do
+			if Config:sub(-5) == ".json" and not Config:find("Autoloads.json") then
+				Config = Config:gsub(ConfigPath .. "\\", "")
+				Config = Config:gsub(".json", "")
+				Configs[#Configs + 1] = Config
+			end
+		end
+		return Configs
+	end,
+	ConfigsToList = function(FolderName)
+		local ConfigPath = Bracket.Utilities.GetRiftConfigPath()
+		local AutoloadsPath = `{ConfigPath}\\Autoloads.json`
+		if not isfile(AutoloadsPath) then writefile(AutoloadsPath, "[]") end
+
+		local Data = readfile(AutoloadsPath)
+		local Autoloads = HttpService:JSONDecode(Data)
+		local Autoload = Autoloads["Autoload"] or Autoloads[tostring(game.GameId)]
 
 		local Configs = {}
-		for Index, Config in pairs(listfiles(`{FolderName}\\Configs`) or {}) do
-			Config = Config:gsub(`{FolderName}\\Configs\\`, "")
-			Config = Config:gsub(".json", "")
-
-			Configs[#Configs + 1] = Config
+		for Index, Config in pairs(listfiles(ConfigPath) or {}) do
+			if Config:sub(-5) == ".json" and not Config:find("Autoloads.json") then
+				Config = Config:gsub(ConfigPath .. "\\", "")
+				Config = Config:gsub(".json", "")
+				Configs[#Configs + 1] = Config
+			end
 		end
 
 		return Configs
 	end,
-	ConfigsToList = function(FolderName)
-		if not isfolder(FolderName) then makefolder(FolderName) end
-		if not isfolder(`{FolderName}\\Configs`) then makefolder(`{FolderName}\\Configs`) end
-		if not isfile(`{FolderName}\\Autoloads.json`) then writefile(`{FolderName}\\Autoloads.json`, "[]") end
-
-		local Autoloads = HttpService:JSONDecode(readfile(`{FolderName}\\Autoloads.json`))
-		local Autoload = Autoloads[tostring(game.GameId)]
-
-		local Configs = {}
-		for Index, Config in pairs(listfiles(`{FolderName}\\Configs`) or {}) do
-			Config = Config:gsub(`{FolderName}\\Configs\\`, "")
-			Config = Config:gsub(".json", "")
-
-			Configs[#Configs + 1] = {
-				Name = Config,
-				Mode = "Button",
-				Value = Config == Autoload
-			}
-		end
-
-		return Configs
-	end
 }
 Bracket.Instances = {
 	Screen = function(Self)
@@ -2927,8 +2930,12 @@ Bracket.Templates = {
 		SubTab:GetPropertyChangedSignal("Name"):Connect(function(Name)
 			TabButtonTitle.Text = Name
 		end)
-        
 		function SubTab.AddConfigSection(Self, FolderName, Side)
+			if FolderName == "Left" or FolderName == "Right" then
+				Side = FolderName
+				FolderName = nil
+			end
+			Side = Side or "Left"
 			local ConfigSection = Self:Section({Name = "Config System", Side = Side}) do
 				local ConfigList = Bracket.Utilities.ConfigsToList(FolderName)
 				local AutoloadConfig = Bracket:GetAutoloadConfig(FolderName)
@@ -3983,7 +3990,7 @@ Bracket.Templates = {
 		local function RebuildSelected()
 			table.clear(_selectedValues)
 			for _, Option in pairs(Dropdown.List) do
-				if Option and Option.Value then
+				if Option and (Option.Value == true or Option.Internal.Value == true) then
 					_selectedValues[#_selectedValues + 1] = Option.Name
 				end
 			end
@@ -4048,6 +4055,7 @@ Bracket.Templates = {
 				local targetState = not allSelected
 				for _, Opt in pairs(Dropdown.List) do
 					if Opt.Mode ~= "Button" then
+						Opt.Value = targetState
 						Opt.Internal.Value = targetState
 						Opt.ColorConfig[3] = targetState
 						Opt.ColorConfig2[3] = targetState
@@ -4178,12 +4186,14 @@ Bracket.Templates = {
 				if Option.Mode == "Button" then
 					-- Radio-button behaviour: clear all, select this one, close dropdown
 					for _, Opt in pairs(Dropdown.List) do
+						Opt.Value = false
 						Opt.Internal.Value = false
 						Opt.ColorConfig[3] = false
 						Opt.ColorConfig2[3] = false
 						Opt.InlineInstance.Tick.BackgroundColor3 = Color3.fromRGB(63, 63, 63)
 						Opt.PopupInstance.Tick.BackgroundColor3 = Color3.fromRGB(63, 63, 63)
 					end
+					Option.Value = true
 					Option.Internal.Value = true
 					Option.ColorConfig[3] = true
 					Option.ColorConfig2[3] = true
@@ -4193,21 +4203,21 @@ Bracket.Templates = {
 					PopupContainerInstance.Visible = false
 					DropdownInstance.Background.BackgroundColor3 = Color3.fromRGB(63, 63, 63)
 					DropdownInstance.PopupBackground.BackgroundColor3 = Color3.fromRGB(63, 63, 63)
-					table.clear(_selectedValues)
-					_selectedValues[1] = Option.Name
-					RefreshUI()
+					RebuildSelected()
 					if Option.Callback then Option.Callback(GetValue(), Option) end
 					if Dropdown.Callback then Dropdown.Callback(GetValue()) end
 				else
 					-- Toggle behaviour: flip this option's state
-					local newVal = not Option.Internal.Value
+					local newVal = not (Option.Value == true or Option.Internal.Value == true)
+					Option.Value = newVal
 					Option.Internal.Value = newVal
 					Option.ColorConfig[3] = newVal
 					Option.ColorConfig2[3] = newVal
 					InlineInstance.Tick.BackgroundColor3 = newVal and Window.Color or Color3.fromRGB(63, 63, 63)
 					PopupInstance.Tick.BackgroundColor3 = newVal and Window.Color or Color3.fromRGB(63, 63, 63)
-					-- Don't close the dropdown in toggle mode
+					RebuildSelected()
 					if Option.Callback then Option.Callback(GetValue(), Option) end
+					if Dropdown.Callback then Dropdown.Callback(GetValue()) end
 				end
 			end
 
@@ -4246,6 +4256,7 @@ Bracket.Templates = {
 		-- Apply initial Value selection
 		for _, Opt in pairs(Dropdown.List) do
 			if table.find(initValueList, Opt.Name) then
+				Opt.Value = true
 				Opt.Internal.Value = true
 				Opt.ColorConfig[3] = true
 				Opt.ColorConfig2[3] = true
@@ -4282,6 +4293,7 @@ Bracket.Templates = {
 					end
 					for _, Opt in pairs(Dropdown.List) do
 						local sel = table.find(names, Opt.Name) ~= nil
+						Opt.Value = sel
 						Opt.Internal.Value = sel
 						Opt.ColorConfig[3] = sel
 						Opt.ColorConfig2[3] = sel
@@ -4804,9 +4816,7 @@ function Bracket.Window(Self, Window)
 	end
 
 	task.defer(function()
-		local ConfigFolder = Window.ConfigFolder or "Rift\\Configs\\Default"
-		if not isfolder("Rift") then makefolder("Rift") end
-		if not isfolder("Rift\\Configs") then makefolder("Rift\\Configs") end
+		local SettingsMainTab = Window:Tab({ Name = "Settings", LayoutOrder = 999999 })
 
 		local SettingsMainTab = Window:Tab({ Name = "Settings", LayoutOrder = 999999 })
 
@@ -5235,6 +5245,7 @@ function Bracket.FormatConfig(Self)
 	return Config
 end
 function Bracket.SaveConfig(Self, FolderName, Name)
+	if not Name or Name == "" then Name = FolderName end
 	if not Name or Name == "" or type(Name) ~= "string" then
 		Self:PushNotification({
 			Title = "Config System",
@@ -5243,12 +5254,10 @@ function Bracket.SaveConfig(Self, FolderName, Name)
 		})
 		return
 	end
-	if not isfolder(FolderName) then makefolder(FolderName) end
-	if not isfolder(`{FolderName}\\Configs`) then makefolder(`{FolderName}\\Configs`) end
-
+	local ConfigPath = Self.Utilities.GetRiftConfigPath()
 	local Config = Self:FormatConfig()
 	Config = HttpService:JSONEncode(Config)
-	writefile(`{FolderName}\\Configs\\{Name}.json`, Config)
+	writefile(`{ConfigPath}\\{Name}.json`, Config)
 	Self:PushNotification({
 		Title = "Config System",
 		Description = `Successfully saved config "{Name}"`,
@@ -5256,12 +5265,13 @@ function Bracket.SaveConfig(Self, FolderName, Name)
 	})
 end
 function Bracket.LoadConfig(Self, FolderName, Name)
+	if not Name or Name == "" then Name = FolderName end
 	if not Name or Name == "" then return end
-	if not isfolder(FolderName) then makefolder(FolderName) end
-	if not isfolder(`{FolderName}\\Configs`) then makefolder(`{FolderName}\\Configs`) end
+	local ConfigPath = Self.Utilities.GetRiftConfigPath()
+	local FilePath = `{ConfigPath}\\{Name}.json`
 
-	if table.find(Self.Utilities.GetConfigs(FolderName), Name) then
-		local Data = readfile(`{FolderName}\\Configs\\{Name}.json`)
+	if isfile(FilePath) then
+		local Data = readfile(FilePath)
 		local DecodedJSON = HttpService:JSONDecode(Data)
 
 		for Index, Element in Self.Elements do
@@ -5275,60 +5285,64 @@ function Bracket.LoadConfig(Self, FolderName, Name)
 	end
 end
 function Bracket.DeleteConfig(Self, FolderName, Name)
+	if not Name or Name == "" then Name = FolderName end
 	if not Name or Name == "" then return end
-	if not isfolder(FolderName) then makefolder(FolderName) end
-	if not isfolder(`{FolderName}\\Configs`) then makefolder(`{FolderName}\\Configs`) end
+	local ConfigPath = Self.Utilities.GetRiftConfigPath()
+	local FilePath = `{ConfigPath}\\{Name}.json`
 
-	if table.find(Self.Utilities.GetConfigs(FolderName), Name) then
-		delfile(`{FolderName}\\Configs\\{Name}.json`)
+	if isfile(FilePath) then
+		delfile(FilePath)
 	end
 end
 function Bracket.GetAutoloadConfig(Self, FolderName)
-	local AutoloadsPath = `{FolderName}\\Autoloads.json`
-	if not isfolder(FolderName) then makefolder(FolderName) end
+	local ConfigPath = Self.Utilities.GetRiftConfigPath()
+	local AutoloadsPath = `{ConfigPath}\\Autoloads.json`
 	if not isfile(AutoloadsPath) then writefile(AutoloadsPath, "[]") end
 
 	local Data = readfile(AutoloadsPath)
 	local Autoloads = HttpService:JSONDecode(Data)
-	local Autoload = Autoloads[tostring(game.GameId)]
+	local Autoload = Autoloads["Autoload"] or Autoloads[tostring(game.GameId)]
 
-	if table.find(Self.Utilities.GetConfigs(FolderName), Autoload) then
+	if table.find(Self.Utilities.GetConfigs(), Autoload) then
 		return Autoload
 	end
 end
 function Bracket:AddToAutoload(FolderName, Name)
-	local AutoloadsPath = `{FolderName}\\Autoloads.json`
-	if not isfolder(FolderName) then makefolder(FolderName) end
+	if not Name or Name == "" then Name = FolderName end
+	local ConfigPath = Self.Utilities.GetRiftConfigPath()
+	local AutoloadsPath = `{ConfigPath}\\Autoloads.json`
 	if not isfile(AutoloadsPath) then writefile(AutoloadsPath, "[]") end
 
 	local Data = readfile(AutoloadsPath)
 	local Autoloads = HttpService:JSONDecode(Data)
+	Autoloads["Autoload"] = Name
 	Autoloads[tostring(game.GameId)] = Name
 
 	writefile(AutoloadsPath, HttpService:JSONEncode(Autoloads))
 end
 function Bracket:RemoveFromAutoload(FolderName)
-	local AutoloadsPath = `{FolderName}\\Autoloads.json`
-	if not isfolder(FolderName) then makefolder(FolderName) end
+	local ConfigPath = Self.Utilities.GetRiftConfigPath()
+	local AutoloadsPath = `{ConfigPath}\\Autoloads.json`
 	if not isfile(AutoloadsPath) then writefile(AutoloadsPath, "[]") end
 
 	local Data = readfile(AutoloadsPath)
 	local Autoloads = HttpService:JSONDecode(Data)
+	Autoloads["Autoload"] = nil
 	Autoloads[tostring(game.GameId)] = nil
 
 	writefile(AutoloadsPath, HttpService:JSONEncode(Autoloads))
 end
 function Bracket.AutoloadConfig(Self, FolderName)
-	local AutoloadsPath = `{FolderName}\\Autoloads.json`
-	if not isfolder(FolderName) then makefolder(FolderName) end
+	local ConfigPath = Self.Utilities.GetRiftConfigPath()
+	local AutoloadsPath = `{ConfigPath}\\Autoloads.json`
 	if not isfile(AutoloadsPath) then writefile(AutoloadsPath, "[]") end
 
 	local Data = readfile(AutoloadsPath)
 	local Autoloads = HttpService:JSONDecode(Data)
-	local Autoload = Autoloads[tostring(game.GameId)]
+	local Autoload = Autoloads["Autoload"] or Autoloads[tostring(game.GameId)]
 
-	if table.find(Self.Utilities.GetConfigs(FolderName), Autoload) then
-		Self:LoadConfig(FolderName, Autoload)
+	if table.find(Self.Utilities.GetConfigs(), Autoload) then
+		Self:LoadConfig(Autoload)
 	end
 end
 
