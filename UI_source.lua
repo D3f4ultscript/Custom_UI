@@ -3913,41 +3913,43 @@ Bracket.Templates = {
 		end
 
 		DropdownInstance.MouseButton1Click:Connect(function()
-			if not OptionContainerInstance.Visible and OptionContainerInstance.ListLayout.AbsoluteContentSize.Y ~= 0 then
-				Bracket.Utilities.ClosePopUps()
-				OptionContainerInstance.Visible = true
-
-				ContainerRender = RunService.RenderStepped:Connect(function()
-					if not OptionContainerInstance.Visible then ContainerRender:Disconnect() end
-
-					local TabPosition = Window.Instance.TabContainer.AbsolutePosition.Y + Window.Instance.TabContainer.AbsoluteSize.Y
-					local DropdownPosition = DropdownInstance.Background.AbsolutePosition.Y + DropdownInstance.Background.AbsoluteSize.Y
-					if TabPosition < DropdownPosition then
-						OptionContainerInstance.Visible = false
-					DropdownInstance.Background.BackgroundColor3 = Color3.fromRGB(63, 63, 63)
-					end
-
-					TabPosition = Window.Instance.TabContainer.AbsolutePosition.Y
-					DropdownPosition = DropdownInstance.Background.AbsolutePosition.Y
-					if TabPosition > DropdownPosition then
-						OptionContainerInstance.Visible = false
-					DropdownInstance.Background.BackgroundColor3 = Color3.fromRGB(63, 63, 63)
-					end
-
-					OptionContainerInstance.Position = UDim2.fromOffset(
-						DropdownInstance.Background.AbsolutePosition.X + 1,
-						(DropdownInstance.Background.AbsolutePosition.Y + GuiInset.Y) + DropdownInstance.Background.AbsoluteSize.Y + 4
-					)
-					OptionContainerInstance.Size = UDim2.fromOffset(
-						DropdownInstance.Background.AbsoluteSize.X,
-						math.clamp(OptionContainerInstance.ListLayout.AbsoluteContentSize.Y, 14, 84) + 6
-						-- OptionContainerInstance.ListLayout.AbsoluteContentSize.Y + 2
-					)
-				end)
-			else
-				OptionContainerInstance.Visible = false
-					DropdownInstance.Background.BackgroundColor3 = Color3.fromRGB(63, 63, 63)
+			local State = not OptionContainerInstance.Visible
+			Bracket.Utilities.ClosePopUps()
+			OptionContainerInstance.Visible = State
+			if State then
+				OptionContainerInstance.Topbar.Title.Text = Dropdown.Name
+				OptionContainerInstance.SearchBar.Text = "" -- Reset search
 			end
+			DropdownInstance.Background.BackgroundColor3 = OptionContainerInstance.Visible
+				and Window.Color or Color3.fromRGB(63, 63, 63)
+		end)
+		DropdownInstance.Background.OpenButton.MouseButton1Click:Connect(function()
+			local State = not OptionContainerInstance.Visible
+			Bracket.Utilities.ClosePopUps()
+			OptionContainerInstance.Visible = State
+			if State then
+				OptionContainerInstance.Topbar.Title.Text = Dropdown.Name
+				OptionContainerInstance.SearchBar.Text = "" -- Reset search
+			end
+			DropdownInstance.Background.BackgroundColor3 = OptionContainerInstance.Visible
+				and Window.Color or Color3.fromRGB(63, 63, 63)
+		end)
+		OptionContainerInstance.Topbar.CloseButton.MouseButton1Click:Connect(function()
+			OptionContainerInstance.Visible = false
+			DropdownInstance.Background.BackgroundColor3 = Color3.fromRGB(63, 63, 63)
+		end)
+		OptionContainerInstance.SearchBar:GetPropertyChangedSignal("Text"):Connect(function()
+			local SearchText = string.lower(OptionContainerInstance.SearchBar.Text)
+			for _, Opt in pairs(OptionContainerInstance.ListContainer:GetChildren()) do
+				if Opt:IsA("TextButton") then
+					if SearchText == "" or string.find(string.lower(Opt.Title.Text), SearchText) then
+						Opt.Visible = true
+					else
+						Opt.Visible = false
+					end
+				end
+			end
+			OptionContainerInstance.ListContainer.CanvasSize = UDim2.fromOffset(0, OptionContainerInstance.ListContainer.ListLayout.AbsoluteContentSize.Y)
 		end)
 		DropdownInstance.Title:GetPropertyChangedSignal("TextBounds"):Connect(function()
 			DropdownInstance.Title.Size = Dropdown.HideName and UDim2.fromScale(1, 0) or UDim2.new(1, 0, 0, DropdownInstance.Title.TextBounds.Y)
