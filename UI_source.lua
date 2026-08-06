@@ -1728,13 +1728,18 @@ Bracket.Instances = {
 		return TKeybind
 	end,
 	Dropdown = function()
-		local Dropdown = Instance.new("Frame")
+		local Dropdown = Instance.new("TextButton")
 		Dropdown.Name = "Dropdown"
 		Dropdown.Size = UDim2.new(1, 0, 0, 37)
 		Dropdown.BorderColor3 = Color3.fromRGB(0, 0, 0)
 		Dropdown.BackgroundTransparency = 1
 		Dropdown.BorderSizePixel = 0
 		Dropdown.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+		Dropdown.AutoButtonColor = false
+		Dropdown.TextSize = 14
+		Dropdown.TextColor3 = Color3.fromRGB(0, 0, 0)
+		Dropdown.Text = ""
+		Dropdown.FontFace = Font.fromEnum(Enum.Font.SourceSans)
 
 		local Title = Instance.new("TextLabel")
 		Title.Name = "Title"
