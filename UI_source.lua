@@ -4834,7 +4834,7 @@ function Bracket.Window(Self, Window)
 	local Watermark = Bracket.WatermarkElement
 	if not Watermark then
 		Watermark = Bracket:Watermark({
-			Title = "Rift Scripts | Version 1.0 (Custom UI)",
+			Title = "Rift Hub x " .. game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name,
 			Enabled = false,
 			Flag = "UI/Watermark/Position"
 		})
