@@ -19,6 +19,9 @@ local Bracket = {
 	Elements = {},
 	Windows = {},
 	Flags = {},
+	Connections = {},
+	CleanupCallbacks = {},
+	Unloaded = false,
 
 	SectionInclude = {
 		"Divider",
@@ -4876,6 +4879,13 @@ function Bracket.Window(Self, Window)
 			end
 		})
 
+		SettingsSection:Button({
+			Name = "Unload",
+			Callback = function()
+				Bracket:Unload()
+			end
+		})
+
 		local DisplaySection = UISubTab:Section({ Name = "Display & Toggles", Side = "Right" })
 		DisplaySection:Keybind({
 			Name = "UI Toggle Key",
@@ -4954,10 +4964,30 @@ function Bracket.Window(Self, Window)
 		local PlayersSection = PlayersSubTab:Section({ Name = "Players", Side = "Left" })
 		PlayersSection:Divider({ Text = "Spectate" })
 
+		local isSpectating = false
+		local spectateConnection = nil
+		local spectateSubjectConnection = nil
+		local spectateCharConn = nil
+
+		local function getSelectedPlayer()
+			local selectedVal = SpectateDropdown.Value
+			local targetName = (type(selectedVal) == "table" and selectedVal[1]) or (type(selectedVal) == "string" and selectedVal) or nil
+			if targetName then
+				return PlayerService:FindFirstChild(targetName)
+			end
+			return nil
+		end
+
 		local SpectateDropdown = PlayersSection:Dropdown({
 			HideName = true,
 			IgnoreFlag = true,
-			List = {}
+			List = {},
+			Callback = function()
+				if isSpectating then
+					spectateConnection = nil
+					applySpectateCamera()
+				end
+			end
 		})
 
 		local function UpdatePlayersDropdown()
@@ -4981,23 +5011,10 @@ function Bracket.Window(Self, Window)
 		end
 
 		UpdatePlayersDropdown()
-		PlayerService.PlayerAdded:Connect(UpdatePlayersDropdown)
-		PlayerService.PlayerRemoving:Connect(UpdatePlayersDropdown)
-
-		local isSpectating = false
-		local spectateConnection = nil
-
-		local spectateSubjectConnection = nil
-
-		local function getTargetHumanoid()
-			local selectedVal = SpectateDropdown.Value
-			local targetName = (type(selectedVal) == "table" and selectedVal[1]) or (type(selectedVal) == "string" and selectedVal) or nil
-			local targetPlayer = targetName and PlayerService:FindFirstChild(targetName)
-			if targetPlayer and targetPlayer.Character then
-				return targetPlayer.Character:FindFirstChildOfClass("Humanoid")
-			end
-			return nil
-		end
+		local pAddedConn = PlayerService.PlayerAdded:Connect(UpdatePlayersDropdown)
+		local pRemConn = PlayerService.PlayerRemoving:Connect(UpdatePlayersDropdown)
+		table.insert(Bracket.Connections, pAddedConn)
+		table.insert(Bracket.Connections, pRemConn)
 
 		local function resetCameraToSelf()
 			local camera = workspace.CurrentCamera
@@ -5013,12 +5030,23 @@ function Bracket.Window(Self, Window)
 		end
 
 		local function applySpectateCamera()
+			if not isSpectating then return end
 			local camera = workspace.CurrentCamera
 			if not camera then return end
-			local targetHum = getTargetHumanoid()
-			if targetHum then
-				camera.CameraType = Enum.CameraType.Custom
-				camera.CameraSubject = targetHum
+
+			local targetPlayer = getSelectedPlayer()
+			if targetPlayer and targetPlayer.Character then
+				local targetHum = targetPlayer.Character:FindFirstChildOfClass("Humanoid")
+				local targetRoot = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+				if targetHum and targetHum.Health > 0 then
+					camera.CameraType = Enum.CameraType.Custom
+					camera.CameraSubject = targetHum
+				elseif targetRoot then
+					camera.CameraType = Enum.CameraType.Custom
+					camera.CameraSubject = targetRoot
+				else
+					resetCameraToSelf()
+				end
 			else
 				resetCameraToSelf()
 			end
@@ -5033,25 +5061,40 @@ function Bracket.Window(Self, Window)
 				spectateSubjectConnection:Disconnect()
 				spectateSubjectConnection = nil
 			end
+			if spectateCharConn then
+				spectateCharConn:Disconnect()
+				spectateCharConn = nil
+			end
 
 			applySpectateCamera()
 
-			-- Override every frame so game camera scripts cannot win
+			-- Force camera subject every frame
 			spectateConnection = RunService.RenderStepped:Connect(function()
 				if not isSpectating then return end
 				applySpectateCamera()
 			end)
+			table.insert(Bracket.Connections, spectateConnection)
 
 			-- Also re-apply immediately whenever the game resets CameraSubject
 			local camera = workspace.CurrentCamera
 			if camera then
 				spectateSubjectConnection = camera:GetPropertyChangedSignal("CameraSubject"):Connect(function()
 					if not isSpectating then return end
-					local targetHum = getTargetHumanoid()
-					if targetHum and camera.CameraSubject ~= targetHum then
-						camera.CameraSubject = targetHum
+					applySpectateCamera()
+				end)
+				table.insert(Bracket.Connections, spectateSubjectConnection)
+			end
+
+			-- Handle target player respawning
+			local targetPlayer = getSelectedPlayer()
+			if targetPlayer then
+				spectateCharConn = targetPlayer.CharacterAdded:Connect(function()
+					task.wait(0.2)
+					if isSpectating then
+						applySpectateCamera()
 					end
 				end)
+				table.insert(Bracket.Connections, spectateCharConn)
 			end
 		end
 
@@ -5065,8 +5108,16 @@ function Bracket.Window(Self, Window)
 				spectateSubjectConnection:Disconnect()
 				spectateSubjectConnection = nil
 			end
+			if spectateCharConn then
+				spectateCharConn:Disconnect()
+				spectateCharConn = nil
+			end
 			resetCameraToSelf()
 		end
+
+		table.insert(Bracket.CleanupCallbacks, function()
+			stopSpectating()
+		end)
 
 		PlayersSection:Toggle({
 			Name = "Spectate Player",
@@ -5107,45 +5158,66 @@ function Bracket.Window(Self, Window)
 		local freecamConnection = nil
 		local freecamSpeed = 1.0
 		local freecamLookSens = 0.25
-		
-		-- Track active keys for freecam flight
-		local activeKeys = {
-			W = false, A = false, S = false, D = false,
-			Space = false, LeftShift = false
-		}
-		
-		local keyBeganConn = UserInputService.InputBegan:Connect(function(input, processed)
-			if processed then return end
-			local codeName = input.KeyCode.Name
-			if activeKeys[codeName] ~= nil then
-				activeKeys[codeName] = true
+		local freecamCharAddedConn = nil
+
+		local function freezeCharacter()
+			if LocalPlayer and LocalPlayer.Character then
+				local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+				if hrp then hrp.Anchored = true end
+				local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+				if hum then
+					hum.WalkSpeed = 0
+					hum.JumpPower = 0
+					hum.JumpHeight = 0
+					hum.PlatformStand = true
+				end
 			end
-		end)
-		local keyEndedConn = UserInputService.InputEnded:Connect(function(input, processed)
-			local codeName = input.KeyCode.Name
-			if activeKeys[codeName] ~= nil then
-				activeKeys[codeName] = false
+		end
+
+		local function unfreezeCharacter()
+			if LocalPlayer and LocalPlayer.Character then
+				local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+				if hrp then hrp.Anchored = false end
+				local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+				if hum then
+					hum.WalkSpeed = 16
+					hum.JumpPower = 50
+					hum.JumpHeight = 7.2
+					hum.PlatformStand = false
+				end
 			end
-		end)
+		end
 
 		local function startFreecam()
 			local camera = workspace.CurrentCamera
 			if not camera then return end
-			
+
 			freecamEnabled = true
 			camera.CameraType = Enum.CameraType.Scriptable
-			
+
+			freezeCharacter()
+
 			local currentPos = camera.CFrame.Position
 			local currentRotX, currentRotY = 0, 0
 			local rx, ry, rz = camera.CFrame:ToOrientation()
 			currentRotX = math.deg(rx)
 			currentRotY = math.deg(ry)
-			
+
+			if freecamCharAddedConn then freecamCharAddedConn:Disconnect() end
+			freecamCharAddedConn = LocalPlayer.CharacterAdded:Connect(function()
+				task.wait(0.2)
+				if freecamEnabled then
+					freezeCharacter()
+				end
+			end)
+			table.insert(Bracket.Connections, freecamCharAddedConn)
+
 			local function updateFreecam(dt)
 				local camera = workspace.CurrentCamera
 				if not camera or not freecamEnabled then return end
-				
-				-- Handle looking around
+
+				freezeCharacter()
+
 				if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
 					local delta = UserInputService:GetMouseDelta()
 					currentRotY = currentRotY - (delta.X * freecamLookSens)
@@ -5154,25 +5226,36 @@ function Bracket.Window(Self, Window)
 				else
 					UserInputService.MouseBehavior = Enum.MouseBehavior.Default
 				end
-				
-				-- Translate inputs
+
 				local moveVector = Vector3.zero
-				if activeKeys.W then moveVector = moveVector + camera.CFrame.LookVector end
-				if activeKeys.S then moveVector = moveVector - camera.CFrame.LookVector end
-				if activeKeys.D then moveVector = moveVector + camera.CFrame.RightVector end
-				if activeKeys.A then moveVector = moveVector - camera.CFrame.RightVector end
-				if activeKeys.Space then moveVector = moveVector + Vector3.new(0, 1, 0) end
-				if activeKeys.LeftShift then moveVector = moveVector - Vector3.new(0, 1, 0) end
-				
+				local camCFrame = CFrame.fromOrientation(math.rad(currentRotX), math.rad(currentRotY), 0)
+
+				if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveVector = moveVector + camCFrame.LookVector end
+				if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveVector = moveVector - camCFrame.LookVector end
+				if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveVector = moveVector + camCFrame.RightVector end
+				if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveVector = moveVector - camCFrame.RightVector end
+
+				if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveVector = moveVector + Vector3.new(0, 1, 0) end
+				if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) or UserInputService:IsKeyDown(Enum.KeyCode.RightControl) then
+					moveVector = moveVector - Vector3.new(0, 1, 0)
+				end
+
+				local currentSpeed = freecamSpeed * 60
+				if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) or UserInputService:IsKeyDown(Enum.KeyCode.RightShift) then
+					currentSpeed = currentSpeed * 2.5
+				end
+
 				if moveVector.Magnitude > 0 then
-					moveVector = moveVector.Unit * (freecamSpeed * 60 * dt)
+					moveVector = moveVector.Unit * (currentSpeed * dt)
 					currentPos = currentPos + moveVector
 				end
-				
-				camera.CFrame = CFrame.new(currentPos) * CFrame.fromOrientation(math.rad(currentRotX), math.rad(currentRotY), 0)
+
+				camera.CFrame = CFrame.new(currentPos) * camCFrame
 			end
-			
+
+			if freecamConnection then freecamConnection:Disconnect() end
 			freecamConnection = RunService.RenderStepped:Connect(updateFreecam)
+			table.insert(Bracket.Connections, freecamConnection)
 		end
 
 		local function stopFreecam()
@@ -5181,9 +5264,18 @@ function Bracket.Window(Self, Window)
 				freecamConnection:Disconnect()
 				freecamConnection = nil
 			end
+			if freecamCharAddedConn then
+				freecamCharAddedConn:Disconnect()
+				freecamCharAddedConn = nil
+			end
 			UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+			unfreezeCharacter()
 			resetCameraToSelf()
 		end
+
+		table.insert(Bracket.CleanupCallbacks, function()
+			stopFreecam()
+		end)
 
 		LocalPlayerSection:Toggle({
 			Name = "Freecam",
@@ -5584,6 +5676,73 @@ function Bracket.ToastNotification(Self, Notification)
 			NotificationInstance:Destroy() if Notification.Callback then Notification.Callback() end
 		end)
 	end)
+end
+
+function Bracket.Unload(Self)
+	if Self.Unloaded then return end
+	Self.Unloaded = true
+
+	if Self.CleanupCallbacks then
+		for _, cb in ipairs(Self.CleanupCallbacks) do
+			pcall(cb)
+		end
+	end
+
+	if Self.Connections then
+		for _, conn in ipairs(Self.Connections) do
+			if typeof(conn) == "RBXScriptConnection" and conn.Connected then
+				pcall(function() conn:Disconnect() end)
+			end
+		end
+		table.clear(Self.Connections)
+	end
+
+	if Self.WatermarkElement and Self.WatermarkElement.Instance then
+		pcall(function() Self.WatermarkElement.Instance:Destroy() end)
+	end
+
+	if Self.KeybindListElement and Self.KeybindListElement.Instance then
+		pcall(function() Self.KeybindListElement.Instance:Destroy() end)
+	end
+
+	if Self.CursorElement and Self.CursorElement.Instance then
+		pcall(function() Self.CursorElement.Instance:Destroy() end)
+	end
+
+	pcall(function()
+		UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+	end)
+
+	pcall(function()
+		local camera = workspace.CurrentCamera
+		if camera then
+			camera.CameraType = Enum.CameraType.Custom
+			if LocalPlayer and LocalPlayer.Character then
+				local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+				if hum then
+					camera.CameraSubject = hum
+				end
+			end
+		end
+	end)
+
+	pcall(function()
+		if LocalPlayer and LocalPlayer.Character then
+			local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+			if hrp then hrp.Anchored = false end
+			local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+			if hum then
+				hum.WalkSpeed = 16
+				hum.JumpPower = 50
+				hum.JumpHeight = 7.2
+				hum.PlatformStand = false
+			end
+		end
+	end)
+
+	if Self.Screen then
+		pcall(function() Self.Screen:Destroy() end)
+	end
 end
 
 if Bracket.IsLocal then
