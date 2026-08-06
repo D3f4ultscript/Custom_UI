@@ -1844,6 +1844,7 @@ Bracket.Instances = {
 		PopupContainer.Position = UDim2.new(0.5, 0, 0.5, 0)
 		PopupContainer.BackgroundColor3 = Color3.fromRGB(31, 31, 31)
 		PopupContainer.BorderColor3 = Color3.fromRGB(0, 0, 0)
+		PopupContainer.BorderSizePixel = 2
 		PopupContainer.Active = true
 
 		local Stroke = Instance.new("UIStroke")
@@ -1858,7 +1859,16 @@ Bracket.Instances = {
 		Topbar.Size = UDim2.new(1, 0, 0, 25)
 		Topbar.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 		Topbar.BorderColor3 = Color3.fromRGB(63, 63, 63)
+		Topbar.BorderSizePixel = 0
 		Topbar.Parent = PopupContainer
+
+		local TopbarLine = Instance.new("Frame")
+		TopbarLine.Name = "TopbarLine"
+		TopbarLine.BackgroundColor3 = Color3.fromRGB(1, 0.5, 0.25)
+		TopbarLine.BorderSizePixel = 0
+		TopbarLine.Position = UDim2.new(0, 0, 1, 0)
+		TopbarLine.Size = UDim2.new(1, 0, 0, 2)
+		TopbarLine.Parent = Topbar
 
 		local Title = Instance.new("TextLabel")
 		Title.Name = "Title"
@@ -3890,7 +3900,7 @@ Bracket.Templates = {
 			end
 		end)
 
-		DropdownInstance.Background.OpenButton.MouseButton1Click:Connect(function()
+		DropdownInstance.PopupBackground.MouseButton1Click:Connect(function()
 			local State = not PopupContainerInstance.Visible
 			Bracket.Utilities.ClosePopUps()
 			PopupContainerInstance.Visible = State
@@ -3898,13 +3908,13 @@ Bracket.Templates = {
 				PopupContainerInstance.Topbar.Title.Text = Dropdown.Name
 				PopupContainerInstance.SearchBar.Text = "" -- Reset search
 			end
-			DropdownInstance.Background.BackgroundColor3 = PopupContainerInstance.Visible
+			DropdownInstance.PopupBackground.BackgroundColor3 = PopupContainerInstance.Visible
 				and Window.Color or Color3.fromRGB(63, 63, 63)
 		end)
 
 		PopupContainerInstance.Topbar.CloseButton.MouseButton1Click:Connect(function()
 			PopupContainerInstance.Visible = false
-			DropdownInstance.Background.BackgroundColor3 = Color3.fromRGB(63, 63, 63)
+			DropdownInstance.PopupBackground.BackgroundColor3 = Color3.fromRGB(63, 63, 63)
 		end)
 
 		PopupContainerInstance.SearchBar:GetPropertyChangedSignal("Text"):Connect(function()
@@ -3983,6 +3993,9 @@ Bracket.Templates = {
 			Option.ColorConfig2 = {PopupInstance.Tick, "BackgroundColor3", Option.Value}
 			Window.Colorable[#Window.Colorable + 1] = Option.ColorConfig
 			Window.Colorable[#Window.Colorable + 1] = Option.ColorConfig2
+			if PopupContainerInstance:FindFirstChild("Topbar") and PopupContainerInstance.Topbar:FindFirstChild("TopbarLine") then
+				Window.Colorable[#Window.Colorable + 1] = {PopupContainerInstance.Topbar.TopbarLine, "BackgroundColor3"}
+			end
 
 			InlineInstance.Parent = OptionContainerInstance
 			InlineInstance.Title.Text = Option.Name
@@ -4030,6 +4043,7 @@ Bracket.Templates = {
 					OptionContainerInstance.Visible = false
 					PopupContainerInstance.Visible = false
 					DropdownInstance.Background.BackgroundColor3 = Color3.fromRGB(63, 63, 63)
+					DropdownInstance.PopupBackground.BackgroundColor3 = Color3.fromRGB(63, 63, 63)
 				end
 
 				RefreshSelected()
@@ -4058,7 +4072,9 @@ Bracket.Templates = {
 			Dropdown:AddOption(Option, Index)
 			Dropdown.List[Index] = Option
 		end
-		table.clear(Dropdown.Value)
+		if type(Dropdown.Value) == "table" then
+			table.clear(Dropdown.Value)
+		end
 		Dropdown.Value = Dropdown.Internal.Value
 
 		Dropdown:GetPropertyChangedSignal("Value"):Connect(function(Value)
