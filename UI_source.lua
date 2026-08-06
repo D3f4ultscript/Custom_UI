@@ -773,7 +773,7 @@ Bracket.Instances = {
 		Label.RichText = true
 		Label.TextColor3 = Color3.fromRGB(191, 191, 191)
 		-- Label.TextYAlignment = Enum.TextYAlignment.Top
-		Label.Text = "by D3f4ult"
+		Label.Text = "by config"
 		Label.FontFace = Font.fromEnum(Enum.Font.SourceSansSemibold)
 		Label.TextXAlignment = Enum.TextXAlignment.Right
 		Label.Parent = Topbar
@@ -4818,11 +4818,9 @@ function Bracket.Window(Self, Window)
 	task.defer(function()
 		local SettingsMainTab = Window:Tab({ Name = "Settings", LayoutOrder = 999999 })
 
-		local SettingsMainTab = Window:Tab({ Name = "Settings", LayoutOrder = 999999 })
-
 		-- SubTab 1: Configs
 		local ConfigSubTab = SettingsMainTab:SubTab({ Name = "Configs" })
-		ConfigSubTab:AddConfigSection(ConfigFolder, "Left")
+		ConfigSubTab:AddConfigSection("Left")
 
 		-- SubTab 2: UI
 		local UISubTab = SettingsMainTab:SubTab({ Name = "UI" })
