@@ -773,7 +773,7 @@ Bracket.Instances = {
 		Label.RichText = true
 		Label.TextColor3 = Color3.fromRGB(191, 191, 191)
 		-- Label.TextYAlignment = Enum.TextYAlignment.Top
-		Label.Text = "customized by D3f4ult"
+		Label.Text = "by D3f4ult"
 		Label.FontFace = Font.fromEnum(Enum.Font.SourceSansSemibold)
 		Label.TextXAlignment = Enum.TextXAlignment.Right
 		Label.Parent = Topbar
@@ -4987,8 +4987,20 @@ function Bracket.Window(Self, Window)
 		local isSpectating = false
 		local spectateConnection = nil
 
+		local spectateSubjectConnection = nil
+
+		local function getTargetHumanoid()
+			local selectedVal = SpectateDropdown.Value
+			local targetName = (type(selectedVal) == "table" and selectedVal[1]) or (type(selectedVal) == "string" and selectedVal) or nil
+			local targetPlayer = targetName and PlayerService:FindFirstChild(targetName)
+			if targetPlayer and targetPlayer.Character then
+				return targetPlayer.Character:FindFirstChildOfClass("Humanoid")
+			end
+			return nil
+		end
+
 		local function resetCameraToSelf()
-			local camera = Workspace.CurrentCamera
+			local camera = workspace.CurrentCamera
 			if camera then
 				camera.CameraType = Enum.CameraType.Custom
 				if LocalPlayer and LocalPlayer.Character then
@@ -5000,38 +5012,47 @@ function Bracket.Window(Self, Window)
 			end
 		end
 
+		local function applySpectateCamera()
+			local camera = workspace.CurrentCamera
+			if not camera then return end
+			local targetHum = getTargetHumanoid()
+			if targetHum then
+				camera.CameraType = Enum.CameraType.Custom
+				camera.CameraSubject = targetHum
+			else
+				resetCameraToSelf()
+			end
+		end
+
 		local function startSpectating()
 			if spectateConnection then
 				spectateConnection:Disconnect()
 				spectateConnection = nil
 			end
+			if spectateSubjectConnection then
+				spectateSubjectConnection:Disconnect()
+				spectateSubjectConnection = nil
+			end
 
+			applySpectateCamera()
+
+			-- Override every frame so game camera scripts cannot win
 			spectateConnection = RunService.RenderStepped:Connect(function()
 				if not isSpectating then return end
-
-				local selectedVal = SpectateDropdown.Value
-				local targetName = (type(selectedVal) == "table" and selectedVal[1]) or (type(selectedVal) == "string" and selectedVal) or nil
-				local targetPlayer = targetName and PlayerService:FindFirstChild(targetName)
-				local camera = Workspace.CurrentCamera
-
-				if camera then
-					if targetPlayer and targetPlayer.Character then
-						local targetHum = targetPlayer.Character:FindFirstChildOfClass("Humanoid")
-						if targetHum then
-							camera.CameraType = Enum.CameraType.Custom
-							camera.CameraSubject = targetHum
-							return
-						end
-					end
-
-					if LocalPlayer and LocalPlayer.Character then
-						local myHum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-						if myHum then
-							camera.CameraSubject = myHum
-						end
-					end
-				end
+				applySpectateCamera()
 			end)
+
+			-- Also re-apply immediately whenever the game resets CameraSubject
+			local camera = workspace.CurrentCamera
+			if camera then
+				spectateSubjectConnection = camera:GetPropertyChangedSignal("CameraSubject"):Connect(function()
+					if not isSpectating then return end
+					local targetHum = getTargetHumanoid()
+					if targetHum and camera.CameraSubject ~= targetHum then
+						camera.CameraSubject = targetHum
+					end
+				end)
+			end
 		end
 
 		local function stopSpectating()
@@ -5039,6 +5060,10 @@ function Bracket.Window(Self, Window)
 			if spectateConnection then
 				spectateConnection:Disconnect()
 				spectateConnection = nil
+			end
+			if spectateSubjectConnection then
+				spectateSubjectConnection:Disconnect()
+				spectateSubjectConnection = nil
 			end
 			resetCameraToSelf()
 		end
