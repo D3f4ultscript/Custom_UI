@@ -1913,12 +1913,12 @@ Bracket.Instances = {
 		local CloseButton = Instance.new("TextButton")
 		CloseButton.Name = "CloseButton"
 		CloseButton.AnchorPoint = Vector2.new(1, 0.5)
-		CloseButton.Size = UDim2.new(0, 16, 0, 16)
-		CloseButton.Position = UDim2.new(1, -6, 0.5, 0)
+		CloseButton.Size = UDim2.new(0, 20, 0, 20)
+		CloseButton.Position = UDim2.new(1, -5, 0.5, 0)
 		CloseButton.BackgroundTransparency = 1
-		CloseButton.Text = "x"
-		CloseButton.TextColor3 = Color3.fromRGB(200, 200, 200)
-		CloseButton.TextSize = 12
+		CloseButton.Text = "X"
+		CloseButton.TextColor3 = Color3.fromRGB(220, 220, 220)
+		CloseButton.TextSize = 14
 		CloseButton.FontFace = Font.fromEnum(Enum.Font.SourceSansBold)
 		CloseButton.Parent = Topbar
 
@@ -3970,12 +3970,16 @@ Bracket.Templates = {
 			PopupContainerInstance.ListContainer.CanvasSize = UDim2.fromOffset(0, PopupContainerInstance.ListContainer.ListLayout.AbsoluteContentSize.Y)
 		end)
 
-		DropdownInstance.Title:GetPropertyChangedSignal("TextBounds"):Connect(function()
-			DropdownInstance.Title.Size = Dropdown.HideName and UDim2.fromScale(1, 0) or UDim2.new(1, 0, 0, DropdownInstance.Title.TextBounds.Y)
-			DropdownInstance.Background.Position = UDim2.new(0, 0, 0, DropdownInstance.Title.Size.Y.Offset + (Dropdown.HideName and 0 or 4))
-			DropdownInstance.PopupBackground.Position = UDim2.new(1, 0, 0, DropdownInstance.Title.Size.Y.Offset + (Dropdown.HideName and 0 or 4))
-			DropdownInstance.Size = UDim2.new(1, 0, 0, DropdownInstance.Title.Size.Y.Offset + DropdownInstance.Background.Size.Y.Offset + (Dropdown.HideName and 0 or 4))
-		end)
+		local function UpdateLayout()
+			local TitleH = Dropdown.HideName and 0 or math.max(14, DropdownInstance.Title.TextBounds.Y)
+			DropdownInstance.Title.Size = Dropdown.HideName and UDim2.fromScale(1, 0) or UDim2.new(1, 0, 0, TitleH)
+			DropdownInstance.Background.Position = UDim2.new(0, 0, 0, TitleH + (Dropdown.HideName and 0 or 4))
+			DropdownInstance.PopupBackground.Position = UDim2.new(1, 0, 0, TitleH + (Dropdown.HideName and 0 or 4))
+			DropdownInstance.Size = UDim2.new(1, 0, 0, TitleH + DropdownInstance.Background.Size.Y.Offset + (Dropdown.HideName and 0 or 4))
+		end
+
+		DropdownInstance.Title:GetPropertyChangedSignal("TextBounds"):Connect(UpdateLayout)
+		UpdateLayout()
 
 		OptionContainerInstance.ListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
 			OptionContainerInstance.CanvasSize = UDim2.fromOffset(0, OptionContainerInstance.ListLayout.AbsoluteContentSize.Y + 6)
