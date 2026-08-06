@@ -770,7 +770,7 @@ Bracket.Instances = {
 		Label.RichText = true
 		Label.TextColor3 = Color3.fromRGB(191, 191, 191)
 		-- Label.TextYAlignment = Enum.TextYAlignment.Top
-		Label.Text = "by D3f4ult v1"
+		Label.Text = "by D3f4ult"
 		Label.FontFace = Font.fromEnum(Enum.Font.SourceSansSemibold)
 		Label.TextXAlignment = Enum.TextXAlignment.Right
 		Label.Parent = Topbar
@@ -4625,7 +4625,7 @@ function Bracket.Window(Self, Window)
 
 		DisplaySection:Toggle({
 			Name = "Watermark Anzeigen",
-			Value = Bracket.Watermark and Bracket.Watermark.Enabled or true,
+			Value = Bracket.Watermark and Bracket.Watermark.Enabled or false,
 			Flag = "UI/ShowWatermark",
 			Callback = function(Value)
 				if Bracket.Watermark then
@@ -4636,7 +4636,7 @@ function Bracket.Window(Self, Window)
 
 		DisplaySection:Toggle({
 			Name = "Keybind Tracker Anzeigen",
-			Value = Bracket.KeybindList and Bracket.KeybindList.Enabled or true,
+			Value = Bracket.KeybindList and Bracket.KeybindList.Enabled or false,
 			Flag = "UI/ShowKeybinds",
 			Callback = function(Value)
 				if Bracket.KeybindList then
