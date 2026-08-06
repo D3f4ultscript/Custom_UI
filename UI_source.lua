@@ -2803,6 +2803,7 @@ Bracket.Templates = {
 	Tab = function(Tab, Window)
 		Tab = Bracket.Utilities:GetType(Tab, "table", {}, true)
 		Tab.Name = Bracket.Utilities:GetType(Tab.Name, "string", "Tab")
+		Tab.LayoutOrder = Bracket.Utilities:GetType(Tab.LayoutOrder, "number", 0)
 
 		local TabInstance = Bracket.Instances.Tab()
 		local TabButtonInstance = Window.LegacyTabButtons and Bracket.Instances.LegacyTabButton() or Bracket.Instances.TabButton()
@@ -2821,6 +2822,7 @@ Bracket.Templates = {
 
 		TabInstance.Parent = Window.Instance.TabContainer
 		TabButtonInstance.Parent = Window.Instance.TabButtonContainer
+		TabButtonInstance.LayoutOrder = Tab.LayoutOrder
 		TabButtonTitle.Text = Tab.Name
 
 		if Window.LegacyTabButtons then
@@ -4584,6 +4586,67 @@ function Bracket.Window(Self, Window)
 
 		return Tab
 	end
+
+	task.defer(function()
+		local ConfigFolder = Window.ConfigFolder or "Rift\\Configs\\NoobIncremental"
+		if not isfolder("Rift") then makefolder("Rift") end
+		if not isfolder("Rift\\Configs") then makefolder("Rift\\Configs") end
+		if not isfolder("Rift\\Configs\\NoobIncremental") then makefolder("Rift\\Configs\\NoobIncremental") end
+
+		local SettingsMainTab = Window:Tab({ Name = "Settings", LayoutOrder = 999999 })
+
+		local ConfigSubTab = SettingsMainTab:SubTab({ Name = "Configs" })
+		ConfigSubTab:AddConfigSection(ConfigFolder, "Left")
+
+		local UISubTab = SettingsMainTab:SubTab({ Name = "UI" })
+
+		local SettingsSection = UISubTab:Section({ Name = "UI Customization", Side = "Left" })
+		SettingsSection:Colorpicker({
+			Name = "UI Theme Color",
+			Value = {0.6, 0.7, 1, 0, false},
+			Flag = "UI/ThemeColor",
+			Callback = function(ValueTable, Color3Val)
+				Window.Color = Color3Val
+			end
+		})
+
+		local DisplaySection = UISubTab:Section({ Name = "Display & Toggles", Side = "Right" })
+		DisplaySection:Keybind({
+			Name = "UI Toggle Key",
+			Value = Enum.KeyCode.RightControl,
+			Mode = "Toggle",
+			Flag = "UI/ToggleKey",
+			Callback = function(Key, KeyDown, ToggleState)
+				if KeyDown then
+					Window.Enabled = not Window.Enabled
+				end
+			end
+		})
+
+		DisplaySection:Toggle({
+			Name = "Watermark Anzeigen",
+			Value = Bracket.Watermark and Bracket.Watermark.Enabled or true,
+			Flag = "UI/ShowWatermark",
+			Callback = function(Value)
+				if Bracket.Watermark then
+					Bracket.Watermark.Enabled = Value
+				end
+			end
+		})
+
+		DisplaySection:Toggle({
+			Name = "Keybind Tracker Anzeigen",
+			Value = Bracket.KeybindList and Bracket.KeybindList.Enabled or true,
+			Flag = "UI/ShowKeybinds",
+			Callback = function(Value)
+				if Bracket.KeybindList then
+					Bracket.KeybindList.Enabled = Value
+				end
+			end
+		})
+
+		Bracket:AutoloadConfig(ConfigFolder)
+	end)
 
 	return Window
 end
