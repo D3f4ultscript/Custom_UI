@@ -770,7 +770,7 @@ Bracket.Instances = {
 		Label.RichText = true
 		Label.TextColor3 = Color3.fromRGB(191, 191, 191)
 		-- Label.TextYAlignment = Enum.TextYAlignment.Top
-		Label.Text = "by D3f4ult v2"
+		Label.Text = "by D3f4ult"
 		Label.FontFace = Font.fromEnum(Enum.Font.SourceSansSemibold)
 		Label.TextXAlignment = Enum.TextXAlignment.Right
 		Label.Parent = Topbar
@@ -4911,48 +4911,87 @@ function Bracket.Window(Self, Window)
 			List = {}
 		})
 
-		local function RefreshPlayersList()
-			local selected = (SpectateDropdown.Value and SpectateDropdown.Value[1]) or nil
-			SpectateDropdown:Clear()
-			local list = {}
+		local function UpdatePlayersDropdown()
+			local currentSelected = (SpectateDropdown.Value and SpectateDropdown.Value[1]) or nil
+
+			local playersInGame = {}
 			for _, p in ipairs(PlayerService:GetPlayers()) do
 				if p ~= LocalPlayer then
-					table.insert(list, { Name = p.Name, Mode = "Button" })
+					table.insert(playersInGame, { Name = p.Name, Mode = "Button" })
 				end
 			end
-			SpectateDropdown:BulkAdd(list)
-			if selected and PlayerService:FindFirstChild(selected) then
-				SpectateDropdown.Value = selected
+
+			SpectateDropdown:Clear()
+			SpectateDropdown:BulkAdd(playersInGame)
+
+			if currentSelected and PlayerService:FindFirstChild(currentSelected) then
+				SpectateDropdown.Value = currentSelected
+			elseif #playersInGame > 0 then
+				SpectateDropdown.Value = playersInGame[1].Name
 			end
 		end
 
-		RefreshPlayersList()
-		PlayerService.PlayerAdded:Connect(RefreshPlayersList)
-		PlayerService.PlayerRemoving:Connect(RefreshPlayersList)
+		UpdatePlayersDropdown()
+		PlayerService.PlayerAdded:Connect(UpdatePlayersDropdown)
+		PlayerService.PlayerRemoving:Connect(UpdatePlayersDropdown)
 
-		SpectateDropdown.OptionContainerInstance:GetPropertyChangedSignal("Visible"):Connect(function()
-			RefreshPlayersList()
-		end)
-		SpectateDropdown.PopupContainerInstance:GetPropertyChangedSignal("Visible"):Connect(function()
-			RefreshPlayersList()
-		end)
+		local isSpectating = false
+		local spectateConnection = nil
 
-		local SpectateConnection = nil
-		local Spectating = false
-
-		local function StopSpectating()
-			Spectating = false
-			if SpectateConnection then
-				SpectateConnection:Disconnect()
-				SpectateConnection = nil
-			end
+		local function resetCameraToSelf()
 			local camera = Workspace.CurrentCamera
-			if camera and LocalPlayer and LocalPlayer.Character then
-				local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-				if hum then
-					camera.CameraSubject = hum
+			if camera then
+				camera.CameraType = Enum.CameraType.Custom
+				if LocalPlayer and LocalPlayer.Character then
+					local myHum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+					if myHum then
+						camera.CameraSubject = myHum
+					end
 				end
 			end
+		end
+
+		local function startSpectating()
+			if spectateConnection then
+				spectateConnection:Disconnect()
+				spectateConnection = nil
+			end
+
+			spectateConnection = RunService.RenderStepped:Connect(function()
+				if not isSpectating then return end
+
+				local selectedVal = SpectateDropdown.Value
+				local targetName = (type(selectedVal) == "table" and selectedVal[1]) or (type(selectedVal) == "string" and selectedVal) or nil
+				local targetPlayer = targetName and PlayerService:FindFirstChild(targetName)
+				local camera = Workspace.CurrentCamera
+
+				if camera then
+					if targetPlayer and targetPlayer.Character then
+						local targetHum = targetPlayer.Character:FindFirstChildOfClass("Humanoid")
+						if targetHum then
+							camera.CameraType = Enum.CameraType.Custom
+							camera.CameraSubject = targetHum
+							return
+						end
+					end
+
+					if LocalPlayer and LocalPlayer.Character then
+						local myHum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+						if myHum then
+							camera.CameraSubject = myHum
+						end
+					end
+				end
+			end)
+		end
+
+		local function stopSpectating()
+			isSpectating = false
+			if spectateConnection then
+				spectateConnection:Disconnect()
+				spectateConnection = nil
+			end
+			resetCameraToSelf()
 		end
 
 		PlayersSection:Toggle({
@@ -4960,25 +4999,28 @@ function Bracket.Window(Self, Window)
 			Value = false,
 			Flag = "Settings/SpectatePlayerToggle",
 			Callback = function(State)
-				Spectating = State
+				isSpectating = State
 				if State then
-					if SpectateConnection then SpectateConnection:Disconnect() end
-					SpectateConnection = RunService.RenderStepped:Connect(function()
-						if not Spectating then return end
-						local selectedName = (SpectateDropdown.Value and SpectateDropdown.Value[1]) or nil
-						local targetPlayer = selectedName and PlayerService:FindFirstChild(selectedName)
-						local camera = Workspace.CurrentCamera
-						
-						if targetPlayer and targetPlayer.Character and camera then
-							local hum = targetPlayer.Character:FindFirstChildOfClass("Humanoid")
-							if hum then
-								camera.CameraSubject = hum
-								camera.CameraType = Enum.CameraType.Custom
-							end
-						end
-					end)
+					startSpectating()
 				else
-					StopSpectating()
+					stopSpectating()
+				end
+			end
+		})
+
+		PlayersSection:Button({
+			Name = "Teleport to Player",
+			Callback = function()
+				local selectedVal = SpectateDropdown.Value
+				local targetName = (type(selectedVal) == "table" and selectedVal[1]) or (type(selectedVal) == "string" and selectedVal) or nil
+				local targetPlayer = targetName and PlayerService:FindFirstChild(targetName)
+
+				if targetPlayer and targetPlayer.Character and LocalPlayer and LocalPlayer.Character then
+					local targetRoot = targetPlayer.Character:FindFirstChild("HumanoidRootPart") or targetPlayer.Character:FindFirstChild("Head")
+					local myRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+					if targetRoot and myRoot then
+						myRoot.CFrame = targetRoot.CFrame + Vector3.new(0, 3, 0)
+					end
 				end
 			end
 		})
