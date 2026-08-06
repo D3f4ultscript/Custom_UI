@@ -2833,14 +2833,12 @@ Bracket.Templates = {
 				ConfigSection:Button({Name = "Refresh", Callback = UpdateConfigList})
 
 				local ConfigDivider = ConfigSection:Divider({Text = not AutoloadConfig and "Autoload Config"
-					or `Autoload Config
-<font color="rgb(191, 191, 191)">[ {AutoloadConfig} ]</font>`})
+					or `Autoload Config\n<font color="rgb(191, 191, 191)">[ {AutoloadConfig} ]</font>`})
 
 				ConfigSection:Button({Name = "Set Autoload Config", Callback = function()
 					if ConfigDropdown.Value and ConfigDropdown.Value[1] then
 						Bracket:AddToAutoload(FolderName, ConfigDropdown.Value[1])
-						ConfigDivider.Text = `Autoload Config
-<font color="rgb(191, 191, 191)">[ {ConfigDropdown.Value[1]} ]</font>`
+						ConfigDivider.Text = `Autoload Config\n<font color="rgb(191, 191, 191)">[ {ConfigDropdown.Value[1]} ]</font>`
 					else
 						Bracket:PushNotification({
 							Title = "Config System",
