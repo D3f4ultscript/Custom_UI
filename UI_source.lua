@@ -229,14 +229,14 @@ Bracket.Utilities = {
 	end,
 	ClosePopUps = function()
 		for Index, Object in pairs(Bracket.Screen:GetChildren()) do
-			if Object.Name == "OptionContainer" or Object.Name == "Palette" then
+			if Object.Name == "OptionContainer" or Object.Name == "DropdownPopup" or Object.Name == "Palette" then
 				Object.Visible = false
 			end
 		end
 	end,
 	ChooseTab = function(WindowInstance, TabButtonInstance, TabInstance)
 		for Index, Object in pairs(Bracket.Screen:GetChildren()) do
-			if Object.Name == "OptionContainer" or Object.Name == "Palette" then
+			if Object.Name == "OptionContainer" or Object.Name == "DropdownPopup" or Object.Name == "Palette" then
 				Object.Visible = false
 			end
 		end
@@ -253,7 +253,7 @@ Bracket.Utilities = {
 	end,
 	ChooseTabLegacy = function(WindowInstance, TabButtonInstance, TabInstance)
 		for Index, Object in pairs(Bracket.Screen:GetChildren()) do
-			if Object.Name == "OptionContainer" or Object.Name == "Palette" then
+			if Object.Name == "OptionContainer" or Object.Name == "DropdownPopup" or Object.Name == "Palette" then
 				Object.Visible = false
 			end
 		end
@@ -1807,8 +1807,36 @@ Bracket.Instances = {
 		return Dropdown
 	end,
 	OptionContainer = function()
+		local OptionContainer = Instance.new("ScrollingFrame")
+		OptionContainer.Name = "OptionContainer"
+		OptionContainer.ZIndex = 4
+		OptionContainer.Visible = false
+		OptionContainer.Size = UDim2.new(0, 100, 0, 100)
+		OptionContainer.BorderColor3 = Color3.fromRGB(0, 0, 0)
+		OptionContainer.Position = UDim2.new(0, 100, 0, 100)
+		OptionContainer.Active = true
+		OptionContainer.BackgroundColor3 = Color3.fromRGB(31, 31, 31)
+		OptionContainer.ScrollingDirection = Enum.ScrollingDirection.Y
+		OptionContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
+		OptionContainer.ScrollBarImageColor3 = Color3.fromRGB(63, 63, 63)
+		OptionContainer.MidImage = "rbxassetid://6432766838"
+		OptionContainer.ScrollBarThickness = 6
+		OptionContainer.TopImage = "rbxassetid://6432766838"
+		OptionContainer.VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar
+		OptionContainer.BottomImage = "rbxassetid://6432766838"
+
+		local ListLayout = Instance.new("UIListLayout")
+		ListLayout.Name = "ListLayout"
+		ListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+		ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+		ListLayout.Padding = UDim.new(0, 2)
+		ListLayout.Parent = OptionContainer
+
+		return OptionContainer
+	end,
+	DropdownPopup = function()
 		local PopupContainer = Instance.new("Frame")
-		PopupContainer.Name = "OptionContainer" -- Name kept same so ClosePopUps works
+		PopupContainer.Name = "DropdownPopup" -- Name kept same so ClosePopUps works
 		PopupContainer.ZIndex = 10
 		PopupContainer.Visible = false
 		PopupContainer.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -3808,139 +3836,80 @@ Bracket.Templates = {
 
 		local DropdownInstance = Bracket.Instances.Dropdown()
 		local OptionContainerInstance = Bracket.Instances.OptionContainer()
-
-		Dropdown.Type = "Dropdown"
-		Dropdown.Instance = DropdownInstance
-		Dropdown.OptionContainerInstance = OptionContainerInstance
-		Dropdown.ParentElement = ParentElement
-		Dropdown.Window = Window
-
-		Dropdown.Internal.Value = {}
-
-		Bracket.Elements[#Bracket.Elements + 1] = Dropdown
-		Bracket.Flags[Dropdown.Flag] = Dropdown.Value
-
-		local Parent = ParentElement.Type == "Tab" and Bracket.Utilities:ChooseTabSide(ParentElement.Instance, Dropdown.Side) or ParentElement.Container
-		local ContainerRender = nil
-
-		DropdownInstance.Parent = Parent
 		OptionContainerInstance.Parent = Bracket.Screen
 
-		DropdownInstance.Title.Text = Dropdown.Name
-		DropdownInstance.Title.Visible = not Dropdown.HideName
+		local PopupContainerInstance = Bracket.Instances.DropdownPopup()
+		PopupContainerInstance.Parent = Bracket.Screen
 
-		local function RefreshSelected()
-			table.clear(Dropdown.Internal.Value)
-
+		local RefreshSelected = function()
+			local SelectedList = {}
 			for Index, Option in pairs(Dropdown.List) do
 				if Option.Value then
-					table.insert(Dropdown.Internal.Value, Option.Name)
+					SelectedList[#SelectedList + 1] = Option.Name
 				end
 			end
-
-			Bracket.Flags[Dropdown.Flag] = Dropdown.Internal.Value
-			DropdownInstance.Background.Value.Text = #Dropdown.Internal.Value == 0
-				and "..." or table.concat(Dropdown.Internal.Value, ", ")
+			DropdownInstance.Background.Value.Text = #SelectedList == 0 and "..." or table.concat(SelectedList, ", ")
 		end
 
-		local function AddOption(Option, LayoutOrder)
-			Option = Bracket.Utilities:GetType(Option, "table", {}, true)
-			Option.Name = Bracket.Utilities:GetType(Option.Name, "string", "Option")
-			Option.Mode = Bracket.Utilities:GetType(Option.Mode, "string", "Button")
-			Option.Value = Bracket.Utilities:GetType(Option.Value, "boolean", false)
-			-- Option.Callback = Bracket.Utilities:GetType(Option.Callback, "function", function() end)
-
-			local OptionInstance = Bracket.Instances.DropdownOption()
-
-			Option.Type = "Option"
-			Option.Instance = OptionInstance
-			Option.Layout = OptionInstance.Layout
-			Option.ParentElement = Dropdown
-			Option.Window = Window
-
-			Option.ColorConfig = {OptionInstance.Tick, "BackgroundColor3", Option.Value}
-			Window.Colorable[#Window.Colorable + 1] = Option.ColorConfig
-
-			OptionInstance.Parent = OptionContainerInstance.ListContainer
-			OptionInstance.Title.Text = Option.Name
-			OptionInstance.Tick.BackgroundColor3 = Option.Value
-				and Window.Color or Color3.fromRGB(63, 63, 63)
-			OptionInstance.LayoutOrder = LayoutOrder
-
-			OptionInstance.MouseButton1Click:Connect(function()
-				Option.Value = not Option.Value
-			end)
-			OptionInstance.Title:GetPropertyChangedSignal("TextBounds"):Connect(function()
-				OptionInstance.Title.Size = UDim2.new(1, -(OptionInstance.Layout.ListLayout.AbsoluteContentSize.X + 18), 1, 0)
-			end)
-
-			Option:GetPropertyChangedSignal("Name"):Connect(function(Name)
-				OptionInstance.Title.Text = Name
-			end)
-			Option:GetPropertyChangedSignal("Value"):Connect(function(Value)
-				if Option.Mode == "Button" then
-					Value = false
-
-					for Index, ButtonOption in pairs(Dropdown.List) do
-						ButtonOption.Internal.Value = Value
-						ButtonOption.ColorConfig[3] = Value
-						ButtonOption.Instance.Tick.BackgroundColor3 = Value
-							and Window.Color or Color3.fromRGB(63, 63, 63)
-					end
-
-					Value = true
-					Option.Internal.Value = Value
-					OptionContainerInstance.Visible = false
-					DropdownInstance.Background.BackgroundColor3 = Color3.fromRGB(63, 63, 63)
-				end
-
-				RefreshSelected()
-				Option.ColorConfig[3] = Value
-				Option.Instance.Tick.BackgroundColor3 = Value
-					and Window.Color or Color3.fromRGB(63, 63, 63)
-				if Option.Callback then Option.Callback(Dropdown.Value, Option) end
-			end)
-
-			for Index, Value in pairs(Option.Internal) do
-				if string.find(Index, "Colorpicker") then
-					Option[Index] = Bracket.Utilities:GetType(Option[Index], "table", {}, true)
-					Option[Index].Flag = Bracket.Utilities:GetType(Option[Index].Flag, "string", `{Dropdown.Flag}/{Option.Name}/Colorpicker`)
-					Option[Index] = Bracket.Templates.ToggleColorpicker(Option[Index], Option, Window)
-				end
-			end
-
-			return Option
-		end
+		local ContainerRender = nil
 
 		DropdownInstance.MouseButton1Click:Connect(function()
-			local State = not OptionContainerInstance.Visible
-			Bracket.Utilities.ClosePopUps()
-			OptionContainerInstance.Visible = State
-			if State then
-				OptionContainerInstance.Topbar.Title.Text = Dropdown.Name
-				OptionContainerInstance.SearchBar.Text = "" -- Reset search
+			if not OptionContainerInstance.Visible and OptionContainerInstance.ListLayout.AbsoluteContentSize.Y ~= 0 then
+				Bracket.Utilities.ClosePopUps()
+				OptionContainerInstance.Visible = true
+
+				ContainerRender = RunService.RenderStepped:Connect(function()
+					if not OptionContainerInstance.Visible then ContainerRender:Disconnect() end
+
+					local TabPosition = Window.Instance.TabContainer.AbsolutePosition.Y + Window.Instance.TabContainer.AbsoluteSize.Y
+					local DropdownPosition = DropdownInstance.Background.AbsolutePosition.Y + DropdownInstance.Background.AbsoluteSize.Y
+					if TabPosition < DropdownPosition then
+						OptionContainerInstance.Visible = false
+					DropdownInstance.Background.BackgroundColor3 = Color3.fromRGB(63, 63, 63)
+					end
+
+					TabPosition = Window.Instance.TabContainer.AbsolutePosition.Y
+					DropdownPosition = DropdownInstance.Background.AbsolutePosition.Y
+					if TabPosition > DropdownPosition then
+						OptionContainerInstance.Visible = false
+					DropdownInstance.Background.BackgroundColor3 = Color3.fromRGB(63, 63, 63)
+					end
+
+					OptionContainerInstance.Position = UDim2.fromOffset(
+						DropdownInstance.Background.AbsolutePosition.X + 1,
+						(DropdownInstance.Background.AbsolutePosition.Y + GuiInset.Y) + DropdownInstance.Background.AbsoluteSize.Y + 4
+					)
+					OptionContainerInstance.Size = UDim2.fromOffset(
+						DropdownInstance.Background.AbsoluteSize.X,
+						math.clamp(OptionContainerInstance.ListLayout.AbsoluteContentSize.Y, 14, 84) + 6
+					)
+				end)
+			else
+				OptionContainerInstance.Visible = false
+					DropdownInstance.Background.BackgroundColor3 = Color3.fromRGB(63, 63, 63)
 			end
-			DropdownInstance.Background.BackgroundColor3 = OptionContainerInstance.Visible
-				and Window.Color or Color3.fromRGB(63, 63, 63)
 		end)
+
 		DropdownInstance.Background.OpenButton.MouseButton1Click:Connect(function()
-			local State = not OptionContainerInstance.Visible
+			local State = not PopupContainerInstance.Visible
 			Bracket.Utilities.ClosePopUps()
-			OptionContainerInstance.Visible = State
+			PopupContainerInstance.Visible = State
 			if State then
-				OptionContainerInstance.Topbar.Title.Text = Dropdown.Name
-				OptionContainerInstance.SearchBar.Text = "" -- Reset search
+				PopupContainerInstance.Topbar.Title.Text = Dropdown.Name
+				PopupContainerInstance.SearchBar.Text = "" -- Reset search
 			end
-			DropdownInstance.Background.BackgroundColor3 = OptionContainerInstance.Visible
+			DropdownInstance.Background.BackgroundColor3 = PopupContainerInstance.Visible
 				and Window.Color or Color3.fromRGB(63, 63, 63)
 		end)
-		OptionContainerInstance.Topbar.CloseButton.MouseButton1Click:Connect(function()
-			OptionContainerInstance.Visible = false
+
+		PopupContainerInstance.Topbar.CloseButton.MouseButton1Click:Connect(function()
+			PopupContainerInstance.Visible = false
 			DropdownInstance.Background.BackgroundColor3 = Color3.fromRGB(63, 63, 63)
 		end)
-		OptionContainerInstance.SearchBar:GetPropertyChangedSignal("Text"):Connect(function()
-			local SearchText = string.lower(OptionContainerInstance.SearchBar.Text)
-			for _, Opt in pairs(OptionContainerInstance.ListContainer:GetChildren()) do
+
+		PopupContainerInstance.SearchBar:GetPropertyChangedSignal("Text"):Connect(function()
+			local SearchText = string.lower(PopupContainerInstance.SearchBar.Text)
+			for _, Opt in pairs(PopupContainerInstance.ListContainer:GetChildren()) do
 				if Opt:IsA("TextButton") then
 					if SearchText == "" or string.find(string.lower(Opt.Title.Text), SearchText) then
 						Opt.Visible = true
@@ -3949,24 +3918,26 @@ Bracket.Templates = {
 					end
 				end
 			end
-			OptionContainerInstance.ListContainer.CanvasSize = UDim2.fromOffset(0, OptionContainerInstance.ListContainer.ListLayout.AbsoluteContentSize.Y)
+			PopupContainerInstance.ListContainer.CanvasSize = UDim2.fromOffset(0, PopupContainerInstance.ListContainer.ListLayout.AbsoluteContentSize.Y)
 		end)
+
 		DropdownInstance.Title:GetPropertyChangedSignal("TextBounds"):Connect(function()
 			DropdownInstance.Title.Size = Dropdown.HideName and UDim2.fromScale(1, 0) or UDim2.new(1, 0, 0, DropdownInstance.Title.TextBounds.Y)
 			DropdownInstance.Background.Position = UDim2.new(0.5, 0, 0, DropdownInstance.Title.Size.Y.Offset + (Dropdown.HideName and 0 or 4))
 			DropdownInstance.Size = UDim2.new(1, 0, 0, DropdownInstance.Title.Size.Y.Offset + DropdownInstance.Background.Size.Y.Offset + (Dropdown.HideName and 0 or 4))
 		end)
-		OptionContainerInstance.ListContainer.ListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-			OptionContainerInstance.ListContainer.CanvasSize = UDim2.fromOffset(0, OptionContainerInstance.ListContainer.ListLayout.AbsoluteContentSize.Y + 6)
+
+		OptionContainerInstance.ListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+			OptionContainerInstance.CanvasSize = UDim2.fromOffset(0, OptionContainerInstance.ListLayout.AbsoluteContentSize.Y + 6)
 		end)
-		--[[DropdownInstance.Background.Value:GetPropertyChangedSignal("TextBounds"):Connect(function()
-			DropdownInstance.Background.Size = UDim2.new(1, 0, 0, DropdownInstance.Background.Value.TextBounds.Y + 2)
-			DropdownInstance.Size = UDim2.new(1, 0, 0, DropdownInstance.Title.Size.Y.Offset + DropdownInstance.Background.Size.Y.Offset)
-		end)]]
+		PopupContainerInstance.ListContainer.ListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+			PopupContainerInstance.ListContainer.CanvasSize = UDim2.fromOffset(0, PopupContainerInstance.ListContainer.ListLayout.AbsoluteContentSize.Y + 6)
+		end)
 
 		Dropdown:GetPropertyChangedSignal("Name"):Connect(function(Name)
 			DropdownInstance.Title.Text = Name
 		end)
+
 		Dropdown:GetPropertyChangedSignal("Value"):Connect(function(Value)
 			if type(Value) ~= "table" then return end
 			if #Value == 0 then RefreshSelected() return end
@@ -3982,80 +3953,122 @@ Bracket.Templates = {
 			end
 		end)
 
-		-- // Dropdown Update
-		for Index, Option in pairs(Dropdown.List) do
-			Option = AddOption(Option, Index)
-			Dropdown.List[Index] = Option
+		function Dropdown.Clear(Self)
+			for Index, Option in pairs(Dropdown.List) do
+				Option.InlineInstance:Destroy()
+				Option.PopupInstance:Destroy()
+			end
+			table.clear(Dropdown.List)
+			Dropdown.Value = {}
 		end
-		for Index, Option in pairs(Dropdown.List) do
-			if Option.Value then Option.Value = true end
-		end
-		RefreshSelected()
-		Dropdown.Default = Bracket.Utilities:DeepCopy(Dropdown.Value)
 
-		function Dropdown.BulkAdd(Self, Table)
-			for Index, Option in pairs(Table) do
-				Option = AddOption(Option, #Self.List + 1)
-				Self.List[#Self.List + 1] = Option
-				if Option.Value then Option.Value = true end
+		function Dropdown.AddOption(Self, Option, LayoutOrder)
+			Option = Bracket.Utilities:GetType(Option, "table", {}, true)
+			Option.Name = Bracket.Utilities:GetType(Option.Name, "string", "Option")
+			Option.Mode = Bracket.Utilities:GetType(Option.Mode, "string", "Button")
+			Option.Value = Bracket.Utilities:GetType(Option.Value, "boolean", false)
+
+			local InlineInstance = Bracket.Instances.DropdownOption()
+			local PopupInstance = Bracket.Instances.DropdownOption()
+
+			Option.Type = "Option"
+			Option.InlineInstance = InlineInstance
+			Option.PopupInstance = PopupInstance
+			Option.ParentElement = Dropdown
+			Option.Window = Window
+
+			-- Color config needs to handle BOTH ticks, but ColorConfig format only supports one instance per config natively.
+			-- We will manually update them.
+			Option.ColorConfig = {InlineInstance.Tick, "BackgroundColor3", Option.Value}
+			Option.ColorConfig2 = {PopupInstance.Tick, "BackgroundColor3", Option.Value}
+			Window.Colorable[#Window.Colorable + 1] = Option.ColorConfig
+			Window.Colorable[#Window.Colorable + 1] = Option.ColorConfig2
+
+			InlineInstance.Parent = OptionContainerInstance
+			InlineInstance.Title.Text = Option.Name
+			InlineInstance.Tick.BackgroundColor3 = Option.Value and Window.Color or Color3.fromRGB(63, 63, 63)
+			InlineInstance.LayoutOrder = LayoutOrder
+
+			PopupInstance.Parent = PopupContainerInstance.ListContainer
+			PopupInstance.Title.Text = Option.Name
+			PopupInstance.Tick.BackgroundColor3 = Option.Value and Window.Color or Color3.fromRGB(63, 63, 63)
+			PopupInstance.LayoutOrder = LayoutOrder
+
+			local function OnOptionClicked()
+				Option.Value = not Option.Value
 			end
-			for Index, Option in pairs(Self.List) do
-				if Option.Value then Option.Value = true end
+
+			InlineInstance.MouseButton1Click:Connect(OnOptionClicked)
+			PopupInstance.MouseButton1Click:Connect(OnOptionClicked)
+
+			InlineInstance.Title:GetPropertyChangedSignal("TextBounds"):Connect(function()
+				InlineInstance.Title.Size = UDim2.new(1, -(InlineInstance.Layout.ListLayout.AbsoluteContentSize.X + 18), 1, 0)
+			end)
+			PopupInstance.Title:GetPropertyChangedSignal("TextBounds"):Connect(function()
+				PopupInstance.Title.Size = UDim2.new(1, -(PopupInstance.Layout.ListLayout.AbsoluteContentSize.X + 18), 1, 0)
+			end)
+
+			Option:GetPropertyChangedSignal("Name"):Connect(function(Name)
+				InlineInstance.Title.Text = Name
+				PopupInstance.Title.Text = Name
+			end)
+
+			Option:GetPropertyChangedSignal("Value"):Connect(function(Value)
+				if Option.Mode == "Button" then
+					Value = false
+
+					for Index, ButtonOption in pairs(Dropdown.List) do
+						ButtonOption.Internal.Value = Value
+						ButtonOption.ColorConfig[3] = Value
+						ButtonOption.ColorConfig2[3] = Value
+						ButtonOption.InlineInstance.Tick.BackgroundColor3 = Value and Window.Color or Color3.fromRGB(63, 63, 63)
+						ButtonOption.PopupInstance.Tick.BackgroundColor3 = Value and Window.Color or Color3.fromRGB(63, 63, 63)
+					end
+
+					Value = true
+					Option.Internal.Value = Value
+					OptionContainerInstance.Visible = false
+					PopupContainerInstance.Visible = false
+					DropdownInstance.Background.BackgroundColor3 = Color3.fromRGB(63, 63, 63)
+				end
+
+				RefreshSelected()
+				Option.ColorConfig[3] = Value
+				Option.ColorConfig2[3] = Value
+				InlineInstance.Tick.BackgroundColor3 = Value and Window.Color or Color3.fromRGB(63, 63, 63)
+				PopupInstance.Tick.BackgroundColor3 = Value and Window.Color or Color3.fromRGB(63, 63, 63)
+				
+				if Option.Callback then Option.Callback(Dropdown.Value, Option) end
+			end)
+
+			for Index, Value in pairs(Option.Internal) do
+				if string.find(Index, "Colorpicker") then
+					-- For nested colorpickers inside toggles (we bind them to InlineInstance since that's the primary layout)
+					Option[Index] = Bracket.Utilities:GetType(Option[Index], "table", {}, true)
+					Option[Index].Flag = Bracket.Utilities:GetType(Option[Index].Flag, "string", `{Dropdown.Flag}/{Option.Name}/Colorpicker`)
+					Option[Index] = Bracket.Templates.ToggleColorpicker(Option[Index], Option, Window)
+				end
 			end
-			RefreshSelected()
-			return Self.List
-		end
-		function Dropdown.AddOption(Self, Option)
-			Option = AddOption(Option, #Self.List + 1)
-			Self.List[#Self.List + 1] = Option
-			if Option.Value then Option.Value = true end
+
 			return Option
 		end
 
-		function Dropdown.Clear(Self)
-			for Index, Option in pairs(Self.List) do
-				Option.Instance:Destroy()
-			end
-			table.clear(Self.List)
+		Dropdown.Internal.Value = Dropdown.Value
+		for Index, Option in pairs(Dropdown.List) do
+			Dropdown:AddOption(Option, Index)
+			Dropdown.List[Index] = Option
 		end
-		function Dropdown.RemoveOption(Self, Name)
-			for Index, Option in pairs(Self.List) do
-				if Option.Name == Name then
-					Option.Instance:Destroy()
-					table.remove(Self.List, Index)
-				end
-			end
-			for Index, Option in pairs(Self.List) do
-				Option.Instance.LayoutOrder = Index
-			end
-		end
-		function Dropdown.SwitchToPlayersMode(Self, ToggleMode, Callback)
-			local Players = {}
-			for Index, Player in pairs(PlayerService:GetPlayers()) do
-				if Player == LocalPlayer then continue end
-				table.insert(Players, {
-					Name = Player.Name,
-					Mode = ToggleMode == "Toggle" or "Button",
-					Callback = Callback
-				})
-			end
-			Self:Clear()
-			Self:BulkAdd(Players)
-			PlayerService.PlayerAdded:Connect(function(Player)
-				Self:AddOption({
-					Name = Player.Name,
-					Mode = ToggleMode == "Toggle" or "Button",
-					Callback = Callback
-				})
-			end)
-			PlayerService.PlayerRemoving:Connect(function(Player)
-				Self:RemoveOption(Player.Name)
-			end)
-		end
+		table.clear(Dropdown.Value)
+		Dropdown.Value = Dropdown.Internal.Value
 
-		function Dropdown.Tooltip(Self, Tooltip)
-			Self.Tooltip = Bracket.Templates.Tooltip(Tooltip, Self)
-		end
+		Dropdown:GetPropertyChangedSignal("Value"):Connect(function(Value)
+			Bracket.Flags[Dropdown.Flag] = Dropdown.Value
+			if Dropdown.Callback then Dropdown.Callback(Dropdown.Value) end
+		end)
+
+		DropdownInstance.Title.Text = Dropdown.Name
+		Bracket.Flags[Dropdown.Flag] = Dropdown.Value
+		Bracket.Elements[#Bracket.Elements + 1] = Dropdown
 
 		return Dropdown
 	end,
