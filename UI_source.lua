@@ -770,7 +770,7 @@ Bracket.Instances = {
 		Label.RichText = true
 		Label.TextColor3 = Color3.fromRGB(191, 191, 191)
 		-- Label.TextYAlignment = Enum.TextYAlignment.Top
-		Label.Text = "by D3f4ult v1"
+		Label.Text = "by D3f4ult"
 		Label.FontFace = Font.fromEnum(Enum.Font.SourceSansSemibold)
 		Label.TextXAlignment = Enum.TextXAlignment.Right
 		Label.Parent = Topbar
@@ -4759,23 +4759,29 @@ function Bracket.Window(Self, Window)
 	end)
 
 	-- Ensure built-in Watermark, KeybindList, and Cursor are initialized with Enabled = false by default
-	if not Bracket.Watermark then
-		Bracket:Watermark({
+	local Watermark = Bracket.WatermarkObject
+	if not Watermark then
+		Watermark = Bracket:Watermark({
 			Title = Window.Name .. " | Version 1.0",
 			Enabled = false,
 			Flag = "UI/Watermark/Position"
 		})
+		Bracket.WatermarkObject = Watermark
 	end
-	if not Bracket.KeybindList then
-		Bracket:KeybindList({
+
+	local KeybindList = Bracket.KeybindListObject
+	if not KeybindList then
+		KeybindList = Bracket:KeybindList({
 			Title = "Keybind Tracker",
 			Enabled = false,
 			Position = UDim2.new(0, 10, 0.5, -123),
 			Size = UDim2.new(0, 150, 0, 250)
 		})
+		Bracket.KeybindListObject = KeybindList
 	end
-	if not Bracket.Cursor then
-		Bracket:Cursor({
+
+	if not Bracket.CursorObject then
+		Bracket.CursorObject = Bracket:Cursor({
 			Enabled = false
 		})
 	end
@@ -4819,23 +4825,19 @@ function Bracket.Window(Self, Window)
 
 		DisplaySection:Toggle({
 			Name = "Show Watermark",
-			Value = Bracket.Watermark and Bracket.Watermark.Enabled or false,
+			Value = Watermark.Enabled,
 			Flag = "UI/ShowWatermark",
 			Callback = function(Value)
-				if Bracket.Watermark then
-					Bracket.Watermark.Enabled = Value
-				end
+				Watermark.Enabled = Value
 			end
 		})
 
 		DisplaySection:Toggle({
 			Name = "Show Keybind Tracker",
-			Value = Bracket.KeybindList and Bracket.KeybindList.Enabled or false,
+			Value = KeybindList.Enabled,
 			Flag = "UI/ShowKeybinds",
 			Callback = function(Value)
-				if Bracket.KeybindList then
-					Bracket.KeybindList.Enabled = Value
-				end
+				KeybindList.Enabled = Value
 			end
 		})
 
