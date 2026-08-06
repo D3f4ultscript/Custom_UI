@@ -5099,6 +5099,105 @@ function Bracket.Window(Self, Window)
 			end
 		})
 
+		-- Local Player section with Freecam
+		local LocalPlayerSection = PlayersSubTab:Section({ Name = "Local Player", Side = "Right" })
+		LocalPlayerSection:Divider({ Text = "Freecam" })
+
+		local freecamEnabled = false
+		local freecamConnection = nil
+		local freecamSpeed = 1.0
+		local freecamLookSens = 0.25
+		
+		-- Track active keys for freecam flight
+		local activeKeys = {
+			W = false, A = false, S = false, D = false,
+			Space = false, LeftShift = false
+		}
+		
+		local keyBeganConn = UserInputService.InputBegan:Connect(function(input, processed)
+			if processed then return end
+			local codeName = input.KeyCode.Name
+			if activeKeys[codeName] ~= nil then
+				activeKeys[codeName] = true
+			end
+		end)
+		local keyEndedConn = UserInputService.InputEnded:Connect(function(input, processed)
+			local codeName = input.KeyCode.Name
+			if activeKeys[codeName] ~= nil then
+				activeKeys[codeName] = false
+			end
+		end)
+
+		local function startFreecam()
+			local camera = workspace.CurrentCamera
+			if not camera then return end
+			
+			freecamEnabled = true
+			camera.CameraType = Enum.CameraType.Scriptable
+			
+			local currentPos = camera.CFrame.Position
+			local currentRotX, currentRotY = 0, 0
+			local rx, ry, rz = camera.CFrame:ToOrientation()
+			currentRotX = math.deg(rx)
+			currentRotY = math.deg(ry)
+			
+			local function updateFreecam(dt)
+				local camera = workspace.CurrentCamera
+				if not camera or not freecamEnabled then return end
+				
+				-- Handle looking around
+				if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
+					local delta = UserInputService:GetMouseDelta()
+					currentRotY = currentRotY - (delta.X * freecamLookSens)
+					currentRotX = math.clamp(currentRotX - (delta.Y * freecamLookSens), -89, 89)
+					UserInputService.MouseBehavior = Enum.MouseBehavior.LockCurrentPosition
+				else
+					UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+				end
+				
+				-- Translate inputs
+				local moveVector = Vector3.zero
+				if activeKeys.W then moveVector = moveVector + camera.CFrame.LookVector end
+				if activeKeys.S then moveVector = moveVector - camera.CFrame.LookVector end
+				if activeKeys.D then moveVector = moveVector + camera.CFrame.RightVector end
+				if activeKeys.A then moveVector = moveVector - camera.CFrame.RightVector end
+				if activeKeys.Space then moveVector = moveVector + Vector3.new(0, 1, 0) end
+				if activeKeys.LeftShift then moveVector = moveVector - Vector3.new(0, 1, 0) end
+				
+				if moveVector.Magnitude > 0 then
+					moveVector = moveVector.Unit * (freecamSpeed * 60 * dt)
+					currentPos = currentPos + moveVector
+				end
+				
+				camera.CFrame = CFrame.new(currentPos) * CFrame.fromOrientation(math.rad(currentRotX), math.rad(currentRotY), 0)
+			end
+			
+			freecamConnection = RunService.RenderStepped:Connect(updateFreecam)
+		end
+
+		local function stopFreecam()
+			freecamEnabled = false
+			if freecamConnection then
+				freecamConnection:Disconnect()
+				freecamConnection = nil
+			end
+			UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+			resetCameraToSelf()
+		end
+
+		LocalPlayerSection:Toggle({
+			Name = "Freecam",
+			Value = false,
+			Flag = "Settings/FreecamToggle",
+			Callback = function(State)
+				if State then
+					startFreecam()
+				else
+					stopFreecam()
+				end
+			end
+		})
+
 		Bracket:AutoloadConfig(ConfigFolder)
 	end)
 
