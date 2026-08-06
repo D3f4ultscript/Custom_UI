@@ -241,7 +241,7 @@ Bracket.Utilities = {
 			end
 		end
 		for Index, Object in pairs(WindowInstance.TabContainer:GetChildren()) do
-			if Object:IsA("ScrollingFrame") then
+			if Object:IsA("Frame") then
 				Object.Visible = Object == TabInstance
 			end
 		end
@@ -258,7 +258,7 @@ Bracket.Utilities = {
 			end
 		end
 		for Index, Object in pairs(WindowInstance.TabContainer:GetChildren()) do
-			if Object:IsA("ScrollingFrame") then
+			if Object:IsA("Frame") then
 				Object.Visible = Object == TabInstance
 			end
 		end
@@ -272,7 +272,7 @@ Bracket.Utilities = {
 		local NumberOfTabs = 0
 
 		for Index, Object in pairs(WindowInstance.TabContainer:GetChildren()) do
-			if Object:IsA("ScrollingFrame") then
+			if Object:IsA("Frame") then
 				NumberOfTabs = NumberOfTabs + 1
 			end
 		end
