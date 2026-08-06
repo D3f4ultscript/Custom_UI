@@ -1847,6 +1847,7 @@ Bracket.Instances = {
 		OptionContainer.TopImage = "rbxassetid://6432766838"
 		OptionContainer.VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar
 		OptionContainer.BottomImage = "rbxassetid://6432766838"
+		OptionContainer.ClipsDescendants = false
 
 		local ListLayout = Instance.new("UIListLayout")
 		ListLayout.Name = "ListLayout"
@@ -2979,10 +2980,14 @@ Bracket.Templates = {
 				ConfigDropdown = ConfigSection:Dropdown({HideName = true, IgnoreFlag = true, List = ConfigList})
 
 				ConfigDropdown.OptionContainerInstance:GetPropertyChangedSignal("Visible"):Connect(function()
-					UpdateConfigList()
+					if ConfigDropdown.OptionContainerInstance.Visible then
+						UpdateConfigList()
+					end
 				end)
 				ConfigDropdown.PopupContainerInstance:GetPropertyChangedSignal("Visible"):Connect(function()
-					UpdateConfigList()
+					if ConfigDropdown.PopupContainerInstance.Visible then
+						UpdateConfigList()
+					end
 				end)
 
 				ConfigSection:Button({Name = "Save", Callback = function()
