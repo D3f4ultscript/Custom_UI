@@ -773,7 +773,7 @@ Bracket.Instances = {
 		Label.RichText = true
 		Label.TextColor3 = Color3.fromRGB(191, 191, 191)
 		-- Label.TextYAlignment = Enum.TextYAlignment.Top
-		Label.Text = "by D3f4ult"
+		Label.Text = "customized by D3f4ult"
 		Label.FontFace = Font.fromEnum(Enum.Font.SourceSansSemibold)
 		Label.TextXAlignment = Enum.TextXAlignment.Right
 		Label.Parent = Topbar
@@ -4743,7 +4743,48 @@ function Bracket.Window(Self, Window)
 	-- Built-in Info Tab (Always Top)
 	local InfoMainTab = Window:Tab({ Name = "Info", LayoutOrder = -999999 })
 
-	-- SubTab 1: Player
+	local function CopyInfoLink(Name, Url)
+		local ClipboardFunction = setclipboard or toclipboard
+		if ClipboardFunction then
+			ClipboardFunction(Url)
+			Bracket:PushNotification({
+				Title = "Credits",
+				Description = Name .. " copied to clipboard",
+				Duration = 5
+			})
+			return
+		end
+
+		Bracket:PushNotification({
+			Title = "Credits",
+			Description = "Clipboard API not available",
+			Duration = 5
+		})
+	end
+
+	-- SubTab 1: Credits
+	local CreditsSubTab = InfoMainTab:SubTab({ Name = "Credits" })
+	local CreditsSection = CreditsSubTab:Section({ Name = "Credits", Side = "Left" })
+
+	CreditsSection:Divider({ Text = "Developer" })
+	CreditsSection:Label({ Text = "Owner: D3f4ult" })
+	CreditsSection:Label({ Text = "Head-Developer: D3f4ult" })
+
+	CreditsSection:Divider({ Text = "Links" })
+	CreditsSection:Button({
+		Name = "Copy Discord Link",
+		Callback = function()
+			CopyInfoLink("Discord link", "https://discord.gg/XDpsSW7Ybs")
+		end
+	})
+	CreditsSection:Button({
+		Name = "Copy Tiktok Link",
+		Callback = function()
+			CopyInfoLink("Tiktok link", "https://www.tiktok.com/@riftservice0")
+		end
+	})
+
+	-- SubTab 2: Player
 	local PlayerSubTab = InfoMainTab:SubTab({ Name = "Player" })
 	local PlayerSection = PlayerSubTab:Section({ Name = "Player", Side = "Left" })
 
@@ -4768,7 +4809,7 @@ function Bracket.Window(Self, Window)
 		end
 	end)
 
-	-- SubTab 2: Game
+	-- SubTab 3: Game
 	local GameSubTab = InfoMainTab:SubTab({ Name = "Game" })
 	local GameSection = GameSubTab:Section({ Name = "Game", Side = "Left" })
 
