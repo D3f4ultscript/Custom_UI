@@ -770,7 +770,7 @@ Bracket.Instances = {
 		Label.RichText = true
 		Label.TextColor3 = Color3.fromRGB(191, 191, 191)
 		-- Label.TextYAlignment = Enum.TextYAlignment.Top
-		Label.Text = "by D3f4ult v1"
+		Label.Text = "by D3f4ult"
 		Label.FontFace = Font.fromEnum(Enum.Font.SourceSansSemibold)
 		Label.TextXAlignment = Enum.TextXAlignment.Right
 		Label.Parent = Topbar
@@ -3935,6 +3935,12 @@ Bracket.Templates = {
 		Dropdown.Flag = Bracket.Utilities:GetType(Dropdown.Flag, "string", Dropdown.Name)
 		Dropdown.List = Bracket.Utilities:GetType(Dropdown.List, "table", {})
 
+		if type(Dropdown.Internal.Value) == "string" then
+			Dropdown.Internal.Value = {Dropdown.Internal.Value}
+		elseif type(Dropdown.Internal.Value) ~= "table" then
+			Dropdown.Internal.Value = {}
+		end
+
 		local DropdownInstance = Bracket.Instances.Dropdown()
 		local OptionContainerInstance = Bracket.Instances.OptionContainer()
 		OptionContainerInstance.Parent = Bracket.Screen
@@ -3970,7 +3976,7 @@ Bracket.Templates = {
 		local ContainerRender = nil
 
 		DropdownInstance.Background.MouseButton1Click:Connect(function()
-			if not OptionContainerInstance.Visible and OptionContainerInstance.ListLayout.AbsoluteContentSize.Y ~= 0 then
+			if not OptionContainerInstance.Visible then
 				Bracket.Utilities.ClosePopUps()
 				OptionContainerInstance.Visible = true
 
@@ -4247,7 +4253,6 @@ Bracket.Templates = {
 			return Option
 		end
 
-		Dropdown.Internal.Value = {}
 		for Index, Option in pairs(Dropdown.List) do
 			Option = Dropdown:AddOption(Option, Index)
 			Dropdown.List[Index] = Option
@@ -4949,14 +4954,13 @@ function Bracket.Window(Self, Window)
 						local selectedName = (SpectateDropdown.Value and SpectateDropdown.Value[1]) or nil
 						local targetPlayer = selectedName and PlayerService:FindFirstChild(selectedName)
 						local camera = Workspace.CurrentCamera
+						
 						if targetPlayer and targetPlayer.Character and camera then
 							local hum = targetPlayer.Character:FindFirstChildOfClass("Humanoid")
 							if hum then
 								camera.CameraSubject = hum
 								camera.CameraType = Enum.CameraType.Custom
 							end
-						else
-							StopSpectating()
 						end
 					end)
 				else
