@@ -773,7 +773,7 @@ Bracket.Instances = {
 		Label.RichText = true
 		Label.TextColor3 = Color3.fromRGB(191, 191, 191)
 		-- Label.TextYAlignment = Enum.TextYAlignment.Top
-		Label.Text = "by config"
+		Label.Text = "by D3f4ult"
 		Label.FontFace = Font.fromEnum(Enum.Font.SourceSansSemibold)
 		Label.TextXAlignment = Enum.TextXAlignment.Right
 		Label.Parent = Topbar
@@ -5243,36 +5243,38 @@ function Bracket.FormatConfig(Self)
 	return Config
 end
 function Bracket.SaveConfig(Self, FolderName, Name)
+	if type(Self) == "string" then Name = FolderName; FolderName = Self end
 	if not Name or Name == "" then Name = FolderName end
 	if not Name or Name == "" or type(Name) ~= "string" then
-		Self:PushNotification({
+		Bracket:PushNotification({
 			Title = "Config System",
 			Description = "Please enter a valid Config Name",
 			Duration = 5
 		})
 		return
 	end
-	local ConfigPath = Self.Utilities.GetRiftConfigPath()
-	local Config = Self:FormatConfig()
+	local ConfigPath = Bracket.Utilities.GetRiftConfigPath()
+	local Config = Bracket:FormatConfig()
 	Config = HttpService:JSONEncode(Config)
 	writefile(`{ConfigPath}\\{Name}.json`, Config)
-	Self:PushNotification({
+	Bracket:PushNotification({
 		Title = "Config System",
 		Description = `Successfully saved config "{Name}"`,
 		Duration = 5
 	})
 end
 function Bracket.LoadConfig(Self, FolderName, Name)
+	if type(Self) == "string" then Name = FolderName; FolderName = Self end
 	if not Name or Name == "" then Name = FolderName end
 	if not Name or Name == "" then return end
-	local ConfigPath = Self.Utilities.GetRiftConfigPath()
+	local ConfigPath = Bracket.Utilities.GetRiftConfigPath()
 	local FilePath = `{ConfigPath}\\{Name}.json`
 
 	if isfile(FilePath) then
 		local Data = readfile(FilePath)
 		local DecodedJSON = HttpService:JSONDecode(Data)
 
-		for Index, Element in Self.Elements do
+		for Index, Element in Bracket.Elements do
 			if Element.Flag and not Element.IgnoreFlag then
 				local Value = DecodedJSON[Element.Flag]
 				if Value ~= nil then
@@ -5283,9 +5285,10 @@ function Bracket.LoadConfig(Self, FolderName, Name)
 	end
 end
 function Bracket.DeleteConfig(Self, FolderName, Name)
+	if type(Self) == "string" then Name = FolderName; FolderName = Self end
 	if not Name or Name == "" then Name = FolderName end
 	if not Name or Name == "" then return end
-	local ConfigPath = Self.Utilities.GetRiftConfigPath()
+	local ConfigPath = Bracket.Utilities.GetRiftConfigPath()
 	local FilePath = `{ConfigPath}\\{Name}.json`
 
 	if isfile(FilePath) then
@@ -5293,7 +5296,7 @@ function Bracket.DeleteConfig(Self, FolderName, Name)
 	end
 end
 function Bracket.GetAutoloadConfig(Self, FolderName)
-	local ConfigPath = Self.Utilities.GetRiftConfigPath()
+	local ConfigPath = Bracket.Utilities.GetRiftConfigPath()
 	local AutoloadsPath = `{ConfigPath}\\Autoloads.json`
 	if not isfile(AutoloadsPath) then writefile(AutoloadsPath, "[]") end
 
@@ -5301,13 +5304,14 @@ function Bracket.GetAutoloadConfig(Self, FolderName)
 	local Autoloads = HttpService:JSONDecode(Data)
 	local Autoload = Autoloads["Autoload"] or Autoloads[tostring(game.GameId)]
 
-	if table.find(Self.Utilities.GetConfigs(), Autoload) then
+	if table.find(Bracket.Utilities.GetConfigs(), Autoload) then
 		return Autoload
 	end
 end
-function Bracket:AddToAutoload(FolderName, Name)
+function Bracket.AddToAutoload(Self, FolderName, Name)
+	if type(Self) == "string" then Name = FolderName; FolderName = Self end
 	if not Name or Name == "" then Name = FolderName end
-	local ConfigPath = Self.Utilities.GetRiftConfigPath()
+	local ConfigPath = Bracket.Utilities.GetRiftConfigPath()
 	local AutoloadsPath = `{ConfigPath}\\Autoloads.json`
 	if not isfile(AutoloadsPath) then writefile(AutoloadsPath, "[]") end
 
@@ -5318,8 +5322,8 @@ function Bracket:AddToAutoload(FolderName, Name)
 
 	writefile(AutoloadsPath, HttpService:JSONEncode(Autoloads))
 end
-function Bracket:RemoveFromAutoload(FolderName)
-	local ConfigPath = Self.Utilities.GetRiftConfigPath()
+function Bracket.RemoveFromAutoload(Self, FolderName)
+	local ConfigPath = Bracket.Utilities.GetRiftConfigPath()
 	local AutoloadsPath = `{ConfigPath}\\Autoloads.json`
 	if not isfile(AutoloadsPath) then writefile(AutoloadsPath, "[]") end
 
@@ -5331,7 +5335,7 @@ function Bracket:RemoveFromAutoload(FolderName)
 	writefile(AutoloadsPath, HttpService:JSONEncode(Autoloads))
 end
 function Bracket.AutoloadConfig(Self, FolderName)
-	local ConfigPath = Self.Utilities.GetRiftConfigPath()
+	local ConfigPath = Bracket.Utilities.GetRiftConfigPath()
 	local AutoloadsPath = `{ConfigPath}\\Autoloads.json`
 	if not isfile(AutoloadsPath) then writefile(AutoloadsPath, "[]") end
 
@@ -5339,8 +5343,8 @@ function Bracket.AutoloadConfig(Self, FolderName)
 	local Autoloads = HttpService:JSONDecode(Data)
 	local Autoload = Autoloads["Autoload"] or Autoloads[tostring(game.GameId)]
 
-	if table.find(Self.Utilities.GetConfigs(), Autoload) then
-		Self:LoadConfig(Autoload)
+	if table.find(Bracket.Utilities.GetConfigs(), Autoload) then
+		Bracket:LoadConfig(Autoload)
 	end
 end
 
