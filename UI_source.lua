@@ -770,7 +770,7 @@ Bracket.Instances = {
 		Label.RichText = true
 		Label.TextColor3 = Color3.fromRGB(191, 191, 191)
 		-- Label.TextYAlignment = Enum.TextYAlignment.Top
-		Label.Text = "by croqsy"
+		Label.Text = "by D3f4ult"
 		Label.FontFace = Font.fromEnum(Enum.Font.SourceSansSemibold)
 		Label.TextXAlignment = Enum.TextXAlignment.Right
 		Label.Parent = Topbar
@@ -4673,6 +4673,55 @@ function Bracket.Window(Self, Window)
 		return Tab
 	end
 
+	-- Built-in Info Tab (Always Top)
+	local InfoMainTab = Window:Tab({ Name = "Info", LayoutOrder = -999999 })
+
+	-- SubTab 1: Player
+	local PlayerSubTab = InfoMainTab:SubTab({ Name = "Player" })
+	local PlayerSection = PlayerSubTab:Section({ Name = "Player", Side = "Left" })
+
+	PlayerSection:Divider({ Text = "Account" })
+	PlayerSection:Label({ Text = "Display Name: " .. (LocalPlayer and LocalPlayer.DisplayName or "Unknown") })
+	PlayerSection:Label({ Text = "Username: " .. (LocalPlayer and LocalPlayer.Name or "Unknown") })
+	PlayerSection:Label({ Text = "Account Age: " .. (LocalPlayer and tostring(LocalPlayer.AccountAge) or "0") .. " days" })
+	PlayerSection:Label({ Text = "User ID: " .. (LocalPlayer and tostring(LocalPlayer.UserId) or "0") })
+
+	PlayerSection:Divider({ Text = "Script" })
+	PlayerSection:Label({ Text = "Executor: " .. (identifyexecutor and identifyexecutor() or "Unknown") })
+	local UptimeLabel = PlayerSection:Label({ Text = "Script Uptime: 00:00:00" })
+
+	local StartTime = os.time()
+	task.spawn(function()
+		while task.wait(1) do
+			local diff = os.time() - StartTime
+			local hours = math.floor(diff / 3600)
+			local mins = math.floor((diff % 3600) / 60)
+			local secs = diff % 60
+			UptimeLabel:SetText(string.format("Script Uptime: %02d:%02d:%02d", hours, mins, secs))
+		end
+	end)
+
+	-- SubTab 2: Game
+	local GameSubTab = InfoMainTab:SubTab({ Name = "Game" })
+	local GameSection = GameSubTab:Section({ Name = "Game", Side = "Left" })
+
+	local MarketplaceService = game:GetService("MarketplaceService")
+	local GameName = "Unknown Game"
+	pcall(function()
+		GameName = MarketplaceService:GetProductInfo(game.PlaceId).Name
+	end)
+
+	GameSection:Divider({ Text = GameName })
+	local PlayerCountLabel = GameSection:Label({ Text = "Players: " .. #PlayerService:GetPlayers() .. "/" .. PlayerService.MaxPlayers })
+	GameSection:Label({ Text = "Place ID: " .. tostring(game.PlaceId) })
+	GameSection:Label({ Text = "Job ID: " .. tostring(game.JobId) })
+
+	task.spawn(function()
+		while task.wait(3) do
+			PlayerCountLabel:SetText("Players: " .. #PlayerService:GetPlayers() .. "/" .. PlayerService.MaxPlayers)
+		end
+	end)
+
 	task.defer(function()
 		local ConfigFolder = Window.ConfigFolder or "Rift\\Configs\\NoobIncremental"
 		if not isfolder("Rift") then makefolder("Rift") end
@@ -4710,7 +4759,7 @@ function Bracket.Window(Self, Window)
 		})
 
 		DisplaySection:Toggle({
-			Name = "Watermark Anzeigen",
+			Name = "Show Watermark",
 			Value = Bracket.Watermark and Bracket.Watermark.Enabled or false,
 			Flag = "UI/ShowWatermark",
 			Callback = function(Value)
@@ -4721,7 +4770,7 @@ function Bracket.Window(Self, Window)
 		})
 
 		DisplaySection:Toggle({
-			Name = "Keybind Tracker Anzeigen",
+			Name = "Show Keybind Tracker",
 			Value = Bracket.KeybindList and Bracket.KeybindList.Enabled or false,
 			Flag = "UI/ShowKeybinds",
 			Callback = function(Value)
