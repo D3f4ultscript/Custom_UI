@@ -1762,10 +1762,10 @@ Bracket.Instances = {
 
 		local Background = Instance.new("Frame")
 		Background.Name = "Background"
-		Background.AnchorPoint = Vector2.new(0.5, 0)
-		Background.Size = UDim2.new(1, 0, 0, 18)
+		Background.AnchorPoint = Vector2.new(0, 0)
+		Background.Size = UDim2.new(1, -22, 0, 18)
 		Background.BorderColor3 = Color3.fromRGB(0, 0, 0)
-		Background.Position = UDim2.new(0.5, 0, 0, 18)
+		Background.Position = UDim2.new(0, 0, 0, 18)
 		Background.BackgroundColor3 = Color3.fromRGB(63, 63, 63)
 		Background.Parent = Dropdown
 
@@ -1774,6 +1774,32 @@ Bracket.Instances = {
 		Gradient.Rotation = 90
 		Gradient.Color = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(191, 191, 191))
 		Gradient.Parent = Background
+
+		local PopupBackground = Instance.new("TextButton")
+		PopupBackground.Name = "PopupBackground"
+		PopupBackground.AnchorPoint = Vector2.new(1, 0)
+		PopupBackground.Size = UDim2.new(0, 18, 0, 18)
+		PopupBackground.BorderColor3 = Color3.fromRGB(0, 0, 0)
+		PopupBackground.Position = UDim2.new(1, 0, 0, 18)
+		PopupBackground.BackgroundColor3 = Color3.fromRGB(63, 63, 63)
+		PopupBackground.AutoButtonColor = false
+		PopupBackground.Text = ""
+		PopupBackground.Parent = Dropdown
+		
+		local PopupGradient = Instance.new("UIGradient")
+		PopupGradient.Name = "Gradient"
+		PopupGradient.Rotation = 90
+		PopupGradient.Color = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(191, 191, 191))
+		PopupGradient.Parent = PopupBackground
+
+		local OpenButton = Instance.new("ImageLabel")
+		OpenButton.Name = "OpenButton"
+		OpenButton.AnchorPoint = Vector2.new(0.5, 0.5)
+		OpenButton.Size = UDim2.new(0, 12, 0, 12)
+		OpenButton.Position = UDim2.new(0.5, 0, 0.5, 0)
+		OpenButton.BackgroundTransparency = 1
+		OpenButton.Image = "rbxassetid://6031091004"
+		OpenButton.Parent = PopupBackground
 
 		local Value = Instance.new("TextLabel")
 		Value.Name = "Value"
@@ -1792,17 +1818,6 @@ Bracket.Instances = {
 		Value.FontFace = Font.fromEnum(Enum.Font.SourceSans)
 		Value.TextXAlignment = Enum.TextXAlignment.Left
 		Value.Parent = Background
-
-		local OpenButton = Instance.new("ImageButton")
-		OpenButton.Name = "OpenButton"
-		OpenButton.AnchorPoint = Vector2.new(1, 0.5)
-		OpenButton.Size = UDim2.new(0, 14, 0, 14)
-		OpenButton.Position = UDim2.new(1, -2, 0.5, 0)
-		OpenButton.BackgroundTransparency = 1
-		OpenButton.Image = "rbxassetid://6031091004" -- Plus/Menu Icon
-		OpenButton.Parent = Background
-
-		Value.Size = UDim2.new(1, -28, 1, 0) -- Adjust value size to leave room for OpenButton
 
 		return Dropdown
 	end,
