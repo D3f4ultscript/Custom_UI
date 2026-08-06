@@ -770,7 +770,7 @@ Bracket.Instances = {
 		Label.RichText = true
 		Label.TextColor3 = Color3.fromRGB(191, 191, 191)
 		-- Label.TextYAlignment = Enum.TextYAlignment.Top
-		Label.Text = "by D3f4ult"
+		Label.Text = "by croqsy"
 		Label.FontFace = Font.fromEnum(Enum.Font.SourceSansSemibold)
 		Label.TextXAlignment = Enum.TextXAlignment.Right
 		Label.Parent = Topbar
@@ -1924,7 +1924,7 @@ Bracket.Instances = {
 
 		local SearchBar = Instance.new("TextBox")
 		SearchBar.Name = "SearchBar"
-		SearchBar.Size = UDim2.new(1, -16, 0, 18)
+		SearchBar.Size = UDim2.new(1, -115, 0, 18)
 		SearchBar.Position = UDim2.new(0, 8, 0, 30)
 		SearchBar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 		SearchBar.BorderColor3 = Color3.fromRGB(63, 63, 63)
@@ -1939,6 +1939,24 @@ Bracket.Instances = {
 		SearchStroke.LineJoinMode = Enum.LineJoinMode.Miter
 		SearchStroke.Color = Color3.fromRGB(63, 63, 63)
 		SearchStroke.Parent = SearchBar
+
+		local SelectAllButton = Instance.new("TextButton")
+		SelectAllButton.Name = "SelectAllButton"
+		SelectAllButton.Size = UDim2.new(0, 95, 0, 18)
+		SelectAllButton.Position = UDim2.new(1, -103, 0, 30)
+		SelectAllButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+		SelectAllButton.BorderColor3 = Color3.fromRGB(63, 63, 63)
+		SelectAllButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+		SelectAllButton.Text = "Select All"
+		SelectAllButton.TextSize = 12
+		SelectAllButton.FontFace = Font.fromEnum(Enum.Font.SourceSansSemibold)
+		SelectAllButton.Parent = PopupContainer
+
+		local SelectAllStroke = Instance.new("UIStroke")
+		SelectAllStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		SelectAllStroke.LineJoinMode = Enum.LineJoinMode.Miter
+		SelectAllStroke.Color = Color3.fromRGB(63, 63, 63)
+		SelectAllStroke.Parent = SelectAllButton
 
 		local OptionContainer = Instance.new("ScrollingFrame")
 		OptionContainer.Name = "ListContainer"
@@ -3105,6 +3123,14 @@ Bracket.Templates = {
 			LabelInstance.Text = Text
 		end)
 
+		function Label.SetText(Self, Text)
+			Label.Text = Text
+		end
+
+		function Label.SetProperty(Self, Property, Value)
+			Label[Property] = Value
+		end
+
 		return Label
 	end,
 	Button = function(Button, ParentElement, Window)
@@ -3511,6 +3537,7 @@ Bracket.Templates = {
 
 		Keybind.Mouse = Bracket.Utilities:GetType(Keybind.Mouse, "boolean", false)
 		Keybind.Blacklist = Bracket.Utilities:GetType(Keybind.Blacklist, "table", {"W", "A", "S", "D", "Slash", "Tab", "Backspace", "Escape", "Space", "Delete", "Backquote", "Unknown"})
+		if typeof(Keybind.Value) == "EnumItem" then Keybind.Value = Keybind.Value.Name end
 		Keybind.Value = Bracket.Utilities:GetType(Keybind.Value, "string", "NONE")
 		-- Keybind.Callback = Bracket.Utilities:GetType(Keybind.Callback, "function", function() end)
 
@@ -3677,6 +3704,7 @@ Bracket.Templates = {
 		Keybind.Mouse = Bracket.Utilities:GetType(Keybind.Mouse, "boolean", false)
 		Keybind.HoldMode = Bracket.Utilities:GetType(Keybind.HoldMode, "boolean", false)
 		Keybind.Blacklist = Bracket.Utilities:GetType(Keybind.Blacklist, "table", {"W", "A", "S", "D", "Slash", "Tab", "Backspace", "Escape", "Space", "Delete", "Backquote", "Unknown"})
+		if typeof(Keybind.Value) == "EnumItem" then Keybind.Value = Keybind.Value.Name end
 		Keybind.Value = Bracket.Utilities:GetType(Keybind.Value, "string", "NONE")
 		-- Keybind.Callback = Bracket.Utilities:GetType(Keybind.Callback, "function", function() end)
 
@@ -3942,6 +3970,58 @@ Bracket.Templates = {
 			end
 		end)
 
+		local function updateSelectAllText()
+			if not PopupContainerInstance:FindFirstChild("SelectAllButton") then return end
+			local allSelected = true
+			if #Dropdown.List == 0 then allSelected = false end
+			for _, Opt in pairs(Dropdown.List) do
+				if not Opt.Value then
+					allSelected = false
+					break
+				end
+			end
+			PopupContainerInstance.SelectAllButton.Text = allSelected and "Unselect All" or "Select All"
+		end
+
+		if PopupContainerInstance:FindFirstChild("SelectAllButton") then
+			PopupContainerInstance.SelectAllButton.MouseButton1Click:Connect(function()
+				local allSelected = true
+				for _, Opt in pairs(Dropdown.List) do
+					if not Opt.Value then
+						allSelected = false
+						break
+					end
+				end
+
+				local targetState = not allSelected
+				for _, Opt in pairs(Dropdown.List) do
+					Opt.Value = targetState
+				end
+
+				updateSelectAllText()
+				RefreshSelected()
+				if Dropdown.Callback then Dropdown.Callback(Dropdown.Value) end
+			end)
+		end
+
+		local wasOptionVisible = false
+		OptionContainerInstance:GetPropertyChangedSignal("Visible"):Connect(function()
+			if wasOptionVisible and not OptionContainerInstance.Visible then
+				RefreshSelected()
+				if Dropdown.Callback then Dropdown.Callback(Dropdown.Value) end
+			end
+			wasOptionVisible = OptionContainerInstance.Visible
+		end)
+
+		local wasPopupVisible = false
+		PopupContainerInstance:GetPropertyChangedSignal("Visible"):Connect(function()
+			if wasPopupVisible and not PopupContainerInstance.Visible then
+				RefreshSelected()
+				if Dropdown.Callback then Dropdown.Callback(Dropdown.Value) end
+			end
+			wasPopupVisible = PopupContainerInstance.Visible
+		end)
+
 		DropdownInstance.PopupBackground.MouseButton1Click:Connect(function()
 			local State = not PopupContainerInstance.Visible
 			Bracket.Utilities.ClosePopUps()
@@ -3949,6 +4029,10 @@ Bracket.Templates = {
 			if State then
 				PopupContainerInstance.Topbar.Title.Text = Dropdown.Name
 				PopupContainerInstance.SearchBar.Text = ""
+				updateSelectAllText()
+			else
+				RefreshSelected()
+				if Dropdown.Callback then Dropdown.Callback(Dropdown.Value) end
 			end
 			DropdownInstance.PopupBackground.BackgroundColor3 = PopupContainerInstance.Visible and Window.Color or Color3.fromRGB(63, 63, 63)
 		end)
@@ -3956,6 +4040,8 @@ Bracket.Templates = {
 		PopupContainerInstance.Topbar.CloseButton.MouseButton1Click:Connect(function()
 			PopupContainerInstance.Visible = false
 			DropdownInstance.PopupBackground.BackgroundColor3 = Color3.fromRGB(63, 63, 63)
+			RefreshSelected()
+			if Dropdown.Callback then Dropdown.Callback(Dropdown.Value) end
 		end)
 
 		PopupContainerInstance.SearchBar:GetPropertyChangedSignal("Text"):Connect(function()
