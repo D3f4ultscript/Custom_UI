@@ -1793,26 +1793,95 @@ Bracket.Instances = {
 		Value.TextXAlignment = Enum.TextXAlignment.Left
 		Value.Parent = Background
 
+		local OpenButton = Instance.new("ImageButton")
+		OpenButton.Name = "OpenButton"
+		OpenButton.AnchorPoint = Vector2.new(1, 0.5)
+		OpenButton.Size = UDim2.new(0, 14, 0, 14)
+		OpenButton.Position = UDim2.new(1, -2, 0.5, 0)
+		OpenButton.BackgroundTransparency = 1
+		OpenButton.Image = "rbxassetid://6031091004" -- Plus/Menu Icon
+		OpenButton.Parent = Background
+
+		Value.Size = UDim2.new(1, -28, 1, 0) -- Adjust value size to leave room for OpenButton
+
 		return Dropdown
 	end,
 	OptionContainer = function()
+		local PopupContainer = Instance.new("Frame")
+		PopupContainer.Name = "OptionContainer" -- Name kept same so ClosePopUps works
+		PopupContainer.ZIndex = 10
+		PopupContainer.Visible = false
+		PopupContainer.AnchorPoint = Vector2.new(0.5, 0.5)
+		PopupContainer.Size = UDim2.new(0, 300, 0, 400)
+		PopupContainer.Position = UDim2.new(0.5, 0, 0.5, 0)
+		PopupContainer.BackgroundColor3 = Color3.fromRGB(31, 31, 31)
+		PopupContainer.BorderColor3 = Color3.fromRGB(0, 0, 0)
+		PopupContainer.Active = true
+
+		local Stroke = Instance.new("UIStroke")
+		Stroke.Name = "Stroke"
+		Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		Stroke.LineJoinMode = Enum.LineJoinMode.Miter
+		Stroke.Color = Color3.fromRGB(63, 63, 63)
+		Stroke.Parent = PopupContainer
+
+		local Topbar = Instance.new("Frame")
+		Topbar.Name = "Topbar"
+		Topbar.Size = UDim2.new(1, 0, 0, 25)
+		Topbar.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+		Topbar.BorderColor3 = Color3.fromRGB(63, 63, 63)
+		Topbar.Parent = PopupContainer
+
+		local Title = Instance.new("TextLabel")
+		Title.Name = "Title"
+		Title.Size = UDim2.new(1, -30, 1, 0)
+		Title.Position = UDim2.new(0, 8, 0, 0)
+		Title.BackgroundTransparency = 1
+		Title.Text = "Dropdown"
+		Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+		Title.TextSize = 14
+		Title.TextXAlignment = Enum.TextXAlignment.Left
+		Title.FontFace = Font.fromEnum(Enum.Font.SourceSansSemibold)
+		Title.Parent = Topbar
+
+		local CloseButton = Instance.new("TextButton")
+		CloseButton.Name = "CloseButton"
+		CloseButton.Size = UDim2.new(0, 25, 1, 0)
+		CloseButton.Position = UDim2.new(1, -25, 0, 0)
+		CloseButton.BackgroundTransparency = 1
+		CloseButton.Text = "X"
+		CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+		CloseButton.TextSize = 14
+		CloseButton.Parent = Topbar
+
+		local SearchBar = Instance.new("TextBox")
+		SearchBar.Name = "SearchBar"
+		SearchBar.Size = UDim2.new(1, -16, 0, 25)
+		SearchBar.Position = UDim2.new(0, 8, 0, 30)
+		SearchBar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+		SearchBar.BorderColor3 = Color3.fromRGB(63, 63, 63)
+		SearchBar.TextColor3 = Color3.fromRGB(255, 255, 255)
+		SearchBar.PlaceholderText = "Search..."
+		SearchBar.TextSize = 14
+		SearchBar.Text = ""
+		SearchBar.Parent = PopupContainer
+
+		local SearchStroke = Instance.new("UIStroke")
+		SearchStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		SearchStroke.LineJoinMode = Enum.LineJoinMode.Miter
+		SearchStroke.Color = Color3.fromRGB(63, 63, 63)
+		SearchStroke.Parent = SearchBar
+
 		local OptionContainer = Instance.new("ScrollingFrame")
-		OptionContainer.Name = "OptionContainer"
-		OptionContainer.ZIndex = 4
-		OptionContainer.Visible = false
-		OptionContainer.Size = UDim2.new(0, 100, 0, 100)
-		OptionContainer.BorderColor3 = Color3.fromRGB(0, 0, 0)
-		OptionContainer.Position = UDim2.new(0, 100, 0, 100)
-		OptionContainer.Active = true
-		OptionContainer.BackgroundColor3 = Color3.fromRGB(31, 31, 31)
+		OptionContainer.Name = "ListContainer"
+		OptionContainer.Size = UDim2.new(1, -16, 1, -65)
+		OptionContainer.Position = UDim2.new(0, 8, 0, 60)
+		OptionContainer.BackgroundTransparency = 1
+		OptionContainer.BorderSizePixel = 0
 		OptionContainer.ScrollingDirection = Enum.ScrollingDirection.Y
-		OptionContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
 		OptionContainer.ScrollBarImageColor3 = Color3.fromRGB(63, 63, 63)
-		OptionContainer.MidImage = "rbxassetid://6432766838"
 		OptionContainer.ScrollBarThickness = 6
-		OptionContainer.TopImage = "rbxassetid://6432766838"
-		OptionContainer.VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar
-		OptionContainer.BottomImage = "rbxassetid://6432766838"
+		OptionContainer.Parent = PopupContainer
 
 		local ListLayout = Instance.new("UIListLayout")
 		ListLayout.Name = "ListLayout"
@@ -1825,11 +1894,11 @@ Bracket.Instances = {
 		Padding.Name = "Padding"
 		Padding.PaddingTop = UDim.new(0, 3)
 		Padding.PaddingBottom = UDim.new(0, 3)
-		Padding.PaddingLeft = UDim.new(0, 5)
-		Padding.PaddingRight = UDim.new(0, 5)
+		Padding.PaddingLeft = UDim.new(0, 3)
+		Padding.PaddingRight = UDim.new(0, 3)
 		Padding.Parent = OptionContainer
 
-		return OptionContainer
+		return PopupContainer
 	end,
 	DropdownOption = function()
 		local Option = Instance.new("TextButton")
@@ -3792,7 +3861,7 @@ Bracket.Templates = {
 			Option.ColorConfig = {OptionInstance.Tick, "BackgroundColor3", Option.Value}
 			Window.Colorable[#Window.Colorable + 1] = Option.ColorConfig
 
-			OptionInstance.Parent = OptionContainerInstance
+			OptionInstance.Parent = OptionContainerInstance.ListContainer
 			OptionInstance.Title.Text = Option.Name
 			OptionInstance.Tick.BackgroundColor3 = Option.Value
 				and Window.Color or Color3.fromRGB(63, 63, 63)
@@ -3822,6 +3891,7 @@ Bracket.Templates = {
 					Value = true
 					Option.Internal.Value = Value
 					OptionContainerInstance.Visible = false
+					DropdownInstance.Background.BackgroundColor3 = Color3.fromRGB(63, 63, 63)
 				end
 
 				RefreshSelected()
@@ -3854,12 +3924,14 @@ Bracket.Templates = {
 					local DropdownPosition = DropdownInstance.Background.AbsolutePosition.Y + DropdownInstance.Background.AbsoluteSize.Y
 					if TabPosition < DropdownPosition then
 						OptionContainerInstance.Visible = false
+					DropdownInstance.Background.BackgroundColor3 = Color3.fromRGB(63, 63, 63)
 					end
 
 					TabPosition = Window.Instance.TabContainer.AbsolutePosition.Y
 					DropdownPosition = DropdownInstance.Background.AbsolutePosition.Y
 					if TabPosition > DropdownPosition then
 						OptionContainerInstance.Visible = false
+					DropdownInstance.Background.BackgroundColor3 = Color3.fromRGB(63, 63, 63)
 					end
 
 					OptionContainerInstance.Position = UDim2.fromOffset(
@@ -3874,6 +3946,7 @@ Bracket.Templates = {
 				end)
 			else
 				OptionContainerInstance.Visible = false
+					DropdownInstance.Background.BackgroundColor3 = Color3.fromRGB(63, 63, 63)
 			end
 		end)
 		DropdownInstance.Title:GetPropertyChangedSignal("TextBounds"):Connect(function()
@@ -3881,8 +3954,8 @@ Bracket.Templates = {
 			DropdownInstance.Background.Position = UDim2.new(0.5, 0, 0, DropdownInstance.Title.Size.Y.Offset + (Dropdown.HideName and 0 or 4))
 			DropdownInstance.Size = UDim2.new(1, 0, 0, DropdownInstance.Title.Size.Y.Offset + DropdownInstance.Background.Size.Y.Offset + (Dropdown.HideName and 0 or 4))
 		end)
-		OptionContainerInstance.ListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-			OptionContainerInstance.CanvasSize = UDim2.fromOffset(0, OptionContainerInstance.ListLayout.AbsoluteContentSize.Y + 6)
+		OptionContainerInstance.ListContainer.ListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+			OptionContainerInstance.ListContainer.CanvasSize = UDim2.fromOffset(0, OptionContainerInstance.ListContainer.ListLayout.AbsoluteContentSize.Y + 6)
 		end)
 		--[[DropdownInstance.Background.Value:GetPropertyChangedSignal("TextBounds"):Connect(function()
 			DropdownInstance.Background.Size = UDim2.new(1, 0, 0, DropdownInstance.Background.Value.TextBounds.Y + 2)
