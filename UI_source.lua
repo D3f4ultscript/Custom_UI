@@ -1849,6 +1849,14 @@ Bracket.Instances = {
 		ListLayout.Padding = UDim.new(0, 2)
 		ListLayout.Parent = OptionContainer
 
+		local Padding = Instance.new("UIPadding")
+		Padding.Name = "Padding"
+		Padding.PaddingTop = UDim.new(0, 4)
+		Padding.PaddingBottom = UDim.new(0, 4)
+		Padding.PaddingLeft = UDim.new(0, 6)
+		Padding.PaddingRight = UDim.new(0, 6)
+		Padding.Parent = OptionContainer
+
 		return OptionContainer
 	end,
 	DropdownPopup = function()
@@ -1877,7 +1885,10 @@ Bracket.Instances = {
 		Topbar.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 		Topbar.BorderColor3 = Color3.fromRGB(63, 63, 63)
 		Topbar.BorderSizePixel = 0
+		Topbar.Active = true
 		Topbar.Parent = PopupContainer
+
+		Bracket.Utilities.MakeDraggable(Topbar, PopupContainer)
 
 		local TopbarLine = Instance.new("Frame")
 		TopbarLine.Name = "TopbarLine"
@@ -1901,23 +1912,25 @@ Bracket.Instances = {
 
 		local CloseButton = Instance.new("TextButton")
 		CloseButton.Name = "CloseButton"
-		CloseButton.Size = UDim2.new(0, 25, 1, 0)
-		CloseButton.Position = UDim2.new(1, -25, 0, 0)
+		CloseButton.AnchorPoint = Vector2.new(1, 0.5)
+		CloseButton.Size = UDim2.new(0, 16, 0, 16)
+		CloseButton.Position = UDim2.new(1, -6, 0.5, 0)
 		CloseButton.BackgroundTransparency = 1
-		CloseButton.Text = "X"
-		CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-		CloseButton.TextSize = 14
+		CloseButton.Text = "x"
+		CloseButton.TextColor3 = Color3.fromRGB(200, 200, 200)
+		CloseButton.TextSize = 12
+		CloseButton.FontFace = Font.fromEnum(Enum.Font.SourceSansBold)
 		CloseButton.Parent = Topbar
 
 		local SearchBar = Instance.new("TextBox")
 		SearchBar.Name = "SearchBar"
-		SearchBar.Size = UDim2.new(1, -16, 0, 25)
+		SearchBar.Size = UDim2.new(1, -16, 0, 18)
 		SearchBar.Position = UDim2.new(0, 8, 0, 30)
 		SearchBar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 		SearchBar.BorderColor3 = Color3.fromRGB(63, 63, 63)
 		SearchBar.TextColor3 = Color3.fromRGB(255, 255, 255)
 		SearchBar.PlaceholderText = "Search..."
-		SearchBar.TextSize = 14
+		SearchBar.TextSize = 12
 		SearchBar.Text = ""
 		SearchBar.Parent = PopupContainer
 
@@ -1929,8 +1942,8 @@ Bracket.Instances = {
 
 		local OptionContainer = Instance.new("ScrollingFrame")
 		OptionContainer.Name = "ListContainer"
-		OptionContainer.Size = UDim2.new(1, -16, 1, -65)
-		OptionContainer.Position = UDim2.new(0, 8, 0, 60)
+		OptionContainer.Size = UDim2.new(1, -16, 1, -55)
+		OptionContainer.Position = UDim2.new(0, 8, 0, 52)
 		OptionContainer.BackgroundTransparency = 1
 		OptionContainer.BorderSizePixel = 0
 		OptionContainer.ScrollingDirection = Enum.ScrollingDirection.Y
