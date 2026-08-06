@@ -770,7 +770,7 @@ Bracket.Instances = {
 		Label.RichText = true
 		Label.TextColor3 = Color3.fromRGB(191, 191, 191)
 		-- Label.TextYAlignment = Enum.TextYAlignment.Top
-		Label.Text = "by D3f4ult"
+		Label.Text = "by D3f4ult v1"
 		Label.FontFace = Font.fromEnum(Enum.Font.SourceSansSemibold)
 		Label.TextXAlignment = Enum.TextXAlignment.Right
 		Label.Parent = Topbar
@@ -3774,8 +3774,8 @@ Bracket.Templates = {
 			KeybindInstance.Size = UDim2.new(0, KeybindInstance.TextBounds.X, 1, 0)
 		end)
 
-		if type(Bracket.KeybindList) == "table" and not Keybind.IgnoreList then
-			Bracket.Templates.KeybindMimic(Keybind, Bracket.KeybindList)
+		if type(Bracket.KeybindListElement) == "table" and not Keybind.IgnoreList then
+			Bracket.Templates.KeybindMimic(Keybind, Bracket.KeybindListElement)
 		end
 
 		UserInputService.InputBegan:Connect(function(Input, GameProcessedEvent)
@@ -4759,17 +4759,16 @@ function Bracket.Window(Self, Window)
 	end)
 
 	-- Ensure built-in Watermark, KeybindList, and Cursor are initialized with Enabled = false by default
-	local Watermark = Bracket.WatermarkObject
+	local Watermark = Bracket.WatermarkElement
 	if not Watermark then
 		Watermark = Bracket:Watermark({
-			Title = Window.Name .. " | Version 1.0",
+			Title = "Rift Scripts | Version 1.0 (Custom UI)",
 			Enabled = false,
 			Flag = "UI/Watermark/Position"
 		})
-		Bracket.WatermarkObject = Watermark
 	end
 
-	local KeybindList = Bracket.KeybindListObject
+	local KeybindList = Bracket.KeybindListElement
 	if not KeybindList then
 		KeybindList = Bracket:KeybindList({
 			Title = "Keybind Tracker",
@@ -4777,11 +4776,10 @@ function Bracket.Window(Self, Window)
 			Position = UDim2.new(0, 10, 0.5, -123),
 			Size = UDim2.new(0, 150, 0, 250)
 		})
-		Bracket.KeybindListObject = KeybindList
 	end
 
-	if not Bracket.CursorObject then
-		Bracket.CursorObject = Bracket:Cursor({
+	if not Bracket.CursorElement then
+		Bracket:Cursor({
 			Enabled = false
 		})
 	end
@@ -4998,7 +4996,7 @@ function Bracket.Cursor(Self, Cursor)
 	end)
 
 	Self.Elements[#Self.Elements + 1] = Cursor
-	Self.Cursor = Cursor
+	Self.CursorElement = Cursor
 	return Cursor
 end
 
@@ -5063,7 +5061,7 @@ function Bracket.Watermark(Self, Watermark)
 	end)
 
 	Self.Elements[#Self.Elements + 1] = Watermark
-	Self.Watermark = Watermark
+	Self.WatermarkElement = Watermark
 	return Watermark
 end
 function Bracket.KeybindList(Self, KeybindList)
@@ -5137,12 +5135,12 @@ function Bracket.KeybindList(Self, KeybindList)
 
 	for Index, Element in pairs(Self.Elements) do
 		if Element.Type == "Keybind" and not Element.IgnoreList and not Element.Mimic then
-			Bracket.Templates.KeybindMimic(Element, Bracket.KeybindList)
+			Bracket.Templates.KeybindMimic(Element, KeybindList)
 		end
 	end
 
 	Self.Elements[#Self.Elements + 1] = KeybindList
-	Self.KeybindList = KeybindList
+	Self.KeybindListElement = KeybindList
 	return KeybindList
 end
 
