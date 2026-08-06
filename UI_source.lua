@@ -3915,21 +3915,29 @@ Bracket.Templates = {
 			end
 		end)
 
-		DropdownInstance.PopupBackground.MouseButton1Click:Connect(function()
-			local State = not PopupContainerInstance.Visible
-			Bracket.Utilities.ClosePopUps()
-			PopupContainerInstance.Visible = State
-			if State then
-				PopupContainerInstance.Topbar.Title.Text = Dropdown.Name
-				PopupContainerInstance.SearchBar.Text = "" -- Reset search
-			end
-			DropdownInstance.PopupBackground.BackgroundColor3 = PopupContainerInstance.Visible
-				and Window.Color or Color3.fromRGB(63, 63, 63)
-		end)
+		local PopupBtn = DropdownInstance:FindFirstChild("PopupBackground") or (DropdownInstance:FindFirstChild("Background") and DropdownInstance.Background:FindFirstChild("OpenButton"))
+		if PopupBtn then
+			PopupBtn.MouseButton1Click:Connect(function()
+				local State = not PopupContainerInstance.Visible
+				Bracket.Utilities.ClosePopUps()
+				PopupContainerInstance.Visible = State
+				if State then
+					PopupContainerInstance.Topbar.Title.Text = Dropdown.Name
+					PopupContainerInstance.SearchBar.Text = "" -- Reset search
+				end
+				if PopupBtn:IsA("GuiObject") then
+					PopupBtn.BackgroundColor3 = PopupContainerInstance.Visible
+						and Window.Color or Color3.fromRGB(63, 63, 63)
+				end
+			end)
+		end
 
 		PopupContainerInstance.Topbar.CloseButton.MouseButton1Click:Connect(function()
 			PopupContainerInstance.Visible = false
-			DropdownInstance.PopupBackground.BackgroundColor3 = Color3.fromRGB(63, 63, 63)
+			local Btn = DropdownInstance:FindFirstChild("PopupBackground") or (DropdownInstance:FindFirstChild("Background") and DropdownInstance.Background:FindFirstChild("OpenButton"))
+			if Btn and Btn:IsA("GuiObject") then
+				Btn.BackgroundColor3 = Color3.fromRGB(63, 63, 63)
+			end
 		end)
 
 		PopupContainerInstance.SearchBar:GetPropertyChangedSignal("Text"):Connect(function()
@@ -4058,7 +4066,8 @@ Bracket.Templates = {
 					OptionContainerInstance.Visible = false
 					PopupContainerInstance.Visible = false
 					DropdownInstance.Background.BackgroundColor3 = Color3.fromRGB(63, 63, 63)
-					DropdownInstance.PopupBackground.BackgroundColor3 = Color3.fromRGB(63, 63, 63)
+					local PopupBtn = DropdownInstance:FindFirstChild("PopupBackground")
+					if PopupBtn then PopupBtn.BackgroundColor3 = Color3.fromRGB(63, 63, 63) end
 				end
 
 				RefreshSelected()
