@@ -1847,7 +1847,8 @@ Bracket.Instances = {
 		OptionContainer.TopImage = "rbxassetid://6432766838"
 		OptionContainer.VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar
 		OptionContainer.BottomImage = "rbxassetid://6432766838"
-		OptionContainer.ClipsDescendants = false
+		OptionContainer.ClipsDescendants = true
+		OptionContainer.AutomaticCanvasSize = Enum.AutomaticSize.Y
 
 		local ListLayout = Instance.new("UIListLayout")
 		ListLayout.Name = "ListLayout"
@@ -1974,6 +1975,8 @@ Bracket.Instances = {
 		OptionContainer.ScrollingDirection = Enum.ScrollingDirection.Y
 		OptionContainer.ScrollBarImageColor3 = Color3.fromRGB(63, 63, 63)
 		OptionContainer.ScrollBarThickness = 6
+		OptionContainer.ClipsDescendants = true
+		OptionContainer.AutomaticCanvasSize = Enum.AutomaticSize.Y
 		OptionContainer.Parent = PopupContainer
 
 		local ListLayout = Instance.new("UIListLayout")
@@ -4036,7 +4039,7 @@ Bracket.Templates = {
 					)
 					OptionContainerInstance.Size = UDim2.fromOffset(
 						DropdownInstance.Background.AbsoluteSize.X,
-						math.clamp(OptionContainerInstance.ListLayout.AbsoluteContentSize.Y, 14, 84) + 6
+						math.clamp(OptionContainerInstance.ListLayout.AbsoluteContentSize.Y + 8, 20, 200)
 					)
 				end)
 			else
