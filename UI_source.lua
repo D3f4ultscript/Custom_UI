@@ -349,7 +349,7 @@ Bracket.Utilities = {
 	ConfigsToList = function(FolderName)
 		local ConfigPath = Bracket.Utilities.GetRiftConfigPath()
 		local AutoloadsPath = `{ConfigPath}\\Autoloads.json`
-		if not isfile(AutoloadsPath) then writefile(AutoloadsPath, "[]") end
+		if not isfile(AutoloadsPath) then writefile(AutoloadsPath, "{}") end
 
 		local Data = readfile(AutoloadsPath)
 		local Autoloads = HttpService:JSONDecode(Data)
@@ -2792,7 +2792,7 @@ Bracket.Templates = {
 			end
 			if not Enabled then
 				for Index, Object in pairs(Bracket.Screen:GetChildren()) do
-					if Object.Name == "Palette" or Object.Name == "OptionContainer" then
+					if Object.Name == "Palette" or Object.Name == "OptionContainer" or Object.Name == "DropdownPopup" then
 						Object.Visible = false
 					end
 				end
@@ -3286,7 +3286,7 @@ Bracket.Templates = {
 		end)
 		Button:GetPropertyChangedSignal("Callback"):Connect(function(Callback)
 			Button.Connection:Disconnect()
-			Button.Connection = ButtonInstance.MouseButton1Click:Connect(Callback)
+			Button.Connection = ButtonInstance.Button.MouseButton1Click:Connect(Callback)
 		end)
 
 		function Button.Tooltip(Self, Tooltip)
@@ -3514,6 +3514,7 @@ Bracket.Templates = {
 		TextboxInstance.Title.Text = Textbox.Name
 		TextboxInstance.Background.Input.Text = Textbox.PasswordMode and string.rep(utf8.char(8226), string.len(Textbox.Value)) or Textbox.Value
 		TextboxInstance.Background.Input.PlaceholderText = Textbox.Placeholder
+		TextboxInstance.Background.Input.ClearTextOnFocus = Textbox.ClearOnFocus == true
 		TextboxInstance.Title.Visible = not Textbox.HideName
 
 		TextboxInstance.Title:GetPropertyChangedSignal("TextBounds"):Connect(function()
@@ -4454,7 +4455,7 @@ Bracket.Templates = {
 
 		PaletteInstance.RGB.RGBBox.FocusLost:Connect(function(Enter)
 			if not Enter then return end
-			local ColorString = string.split(string.gsub(PaletteInstance.RGB.RGBBox.Text, " ", ""), ", ")
+			local ColorString = string.split(string.gsub(PaletteInstance.RGB.RGBBox.Text, " ", ""), ",")
 			local Hue, Saturation, Value = Color3.fromRGB(ColorString[1], ColorString[2], ColorString[3]):ToHSV()
 			PaletteInstance.RGB.RGBBox.Text = ""
 			Colorpicker.Value[1] = Hue
@@ -4639,7 +4640,7 @@ Bracket.Templates = {
 
 		PaletteInstance.RGB.RGBBox.FocusLost:Connect(function(Enter)
 			if not Enter then return end
-			local ColorString = string.split(string.gsub(PaletteInstance.RGB.RGBBox.Text, " ", ""), ", ")
+			local ColorString = string.split(string.gsub(PaletteInstance.RGB.RGBBox.Text, " ", ""), ",")
 			local Hue, Saturation, Value = Color3.fromRGB(ColorString[1], ColorString[2], ColorString[3]):ToHSV()
 			PaletteInstance.RGB.RGBBox.Text = ""
 			Colorpicker.Value[1] = Hue
@@ -4699,6 +4700,7 @@ Bracket.Templates = {
 }
 
 function Bracket.Window(Self, Window)
+	local ConfigFolder = Window and Window.ConfigFolder or nil
 	Window = Bracket.Templates.Window(Window)
 
 	function Window.Tab(Self, Tab)
@@ -5479,11 +5481,11 @@ function Bracket.KeybindList(Self, KeybindList)
 end
 
 function Bracket.GetValue(Self, Flag)
-	local Element = Self.Utilities.FindElementByFlag(Self)
+	local Element = Self.Utilities.FindElementByFlag(Self, Flag)
 	if Element then return Element.Value end
 end
 function Bracket.SetValue(Self, Flag, Value)
-	local Element = Self.Utilities.FindElementByFlag(Self)
+	local Element = Self.Utilities.FindElementByFlag(Self, Flag)
 	if Element then Element.Value = Value end
 end
 
@@ -5564,7 +5566,7 @@ end
 function Bracket.GetAutoloadConfig(Self, FolderName)
 	local ConfigPath = Bracket.Utilities.GetRiftConfigPath()
 	local AutoloadsPath = `{ConfigPath}\\Autoloads.json`
-	if not isfile(AutoloadsPath) then writefile(AutoloadsPath, "[]") end
+	if not isfile(AutoloadsPath) then writefile(AutoloadsPath, "{}") end
 
 	local Data = readfile(AutoloadsPath)
 	local Autoloads = HttpService:JSONDecode(Data)
@@ -5579,7 +5581,7 @@ function Bracket.AddToAutoload(Self, FolderName, Name)
 	if not Name or Name == "" then Name = FolderName end
 	local ConfigPath = Bracket.Utilities.GetRiftConfigPath()
 	local AutoloadsPath = `{ConfigPath}\\Autoloads.json`
-	if not isfile(AutoloadsPath) then writefile(AutoloadsPath, "[]") end
+	if not isfile(AutoloadsPath) then writefile(AutoloadsPath, "{}") end
 
 	local Data = readfile(AutoloadsPath)
 	local Autoloads = HttpService:JSONDecode(Data)
@@ -5591,7 +5593,7 @@ end
 function Bracket.RemoveFromAutoload(Self, FolderName)
 	local ConfigPath = Bracket.Utilities.GetRiftConfigPath()
 	local AutoloadsPath = `{ConfigPath}\\Autoloads.json`
-	if not isfile(AutoloadsPath) then writefile(AutoloadsPath, "[]") end
+	if not isfile(AutoloadsPath) then writefile(AutoloadsPath, "{}") end
 
 	local Data = readfile(AutoloadsPath)
 	local Autoloads = HttpService:JSONDecode(Data)
@@ -5603,7 +5605,7 @@ end
 function Bracket.AutoloadConfig(Self, FolderName)
 	local ConfigPath = Bracket.Utilities.GetRiftConfigPath()
 	local AutoloadsPath = `{ConfigPath}\\Autoloads.json`
-	if not isfile(AutoloadsPath) then writefile(AutoloadsPath, "[]") end
+	if not isfile(AutoloadsPath) then writefile(AutoloadsPath, "{}") end
 
 	local Data = readfile(AutoloadsPath)
 	local Autoloads = HttpService:JSONDecode(Data)
