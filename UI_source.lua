@@ -327,12 +327,72 @@ Bracket.Utilities = {
 			end
 		end
 	end,
+	SanitizeFileName = function(Name)
+		if type(Name) ~= "string" then return "Unknown" end
+		local Clean = Name:gsub('[%<%>%:%"%/%\\%|%?%*]', ""):gsub("[%c]", "")
+		Clean = Clean:match("^%s*(.-)%s*$")
+		return (Clean ~= "" and Clean) or "Unknown"
+	end,
 	GetRiftConfigPath = function()
 		if not isfolder("Rift") then makefolder("Rift") end
 		if not isfolder("Rift\\Configs") then makefolder("Rift\\Configs") end
-		local gameFolder = `Rift\\Configs\\{tostring(game.GameId)}`
-		if not isfolder(gameFolder) then makefolder(gameFolder) end
-		return gameFolder
+
+		local username = LocalPlayer and LocalPlayer.Name or "UnknownUser"
+		local sanitizedUser = Bracket.Utilities.SanitizeFileName(username)
+		local userFolder = `Rift\\Configs\\{sanitizedUser}`
+		if not isfolder(userFolder) then makefolder(userFolder) end
+
+		local gameIdStr = tostring(game.GameId)
+		local rawGameName = "UnknownGame"
+		pcall(function()
+			rawGameName = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name
+		end)
+		local sanitizedGameName = Bracket.Utilities.SanitizeFileName(rawGameName)
+		local targetFolderName = `{gameIdStr} {sanitizedGameName}`
+		local targetPath = `{userFolder}\\{targetFolderName}`
+
+		-- Check if a folder starting with this GameID already exists under userFolder
+		local existingFolder = nil
+		local filesInUser = listfiles(userFolder) or {}
+		for _, path in ipairs(filesInUser) do
+			if isfolder(path) then
+				local folderName = path:gsub(userFolder .. "\\", "")
+				if folderName == gameIdStr or folderName:sub(1, #gameIdStr + 1) == (gameIdStr .. " ") then
+					existingFolder = path
+					break
+				end
+			end
+		end
+
+		if existingFolder then
+			if existingFolder ~= targetPath then
+				-- Rename / move folder to update Game Name if changed
+				local renamed = false
+				if syn and syn.renamefolder then
+					pcall(function() syn.renamefolder(existingFolder, targetPath); renamed = true end)
+				elseif renamefolder then
+					pcall(function() renamefolder(existingFolder, targetPath); renamed = true end)
+				end
+
+				if not renamed then
+					-- Fallback copy & delete if rename is not supported
+					if not isfolder(targetPath) then makefolder(targetPath) end
+					local oldFiles = listfiles(existingFolder) or {}
+					for _, f in ipairs(oldFiles) do
+						if isfile(f) then
+							local fileName = f:gsub(existingFolder .. "\\", "")
+							pcall(function() writefile(`{targetPath}\\{fileName}`, readfile(f)) end)
+							pcall(function() delfile(f) end)
+						end
+					end
+					pcall(function() delfolder(existingFolder) end)
+				end
+			end
+		else
+			if not isfolder(targetPath) then makefolder(targetPath) end
+		end
+
+		return targetPath
 	end,
 	GetConfigs = function(FolderName)
 		local ConfigPath = Bracket.Utilities.GetRiftConfigPath()
